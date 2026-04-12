@@ -1,0 +1,1 @@
+-- Scripts para la base de datos de gestión de materiales y ventas
