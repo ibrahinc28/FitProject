@@ -65,7 +65,9 @@ services:
     networks:
       - fit-network
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+        required: false
 
   # ── MS-Users (usuarios, roles, auth) ─────────────────────────────────────
   ms-users:
@@ -82,7 +84,9 @@ services:
     networks:
       - fit-network
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+        required: false
 
   # ── MS-Ventas (modelos, unidades, ventas) ─────────────────────────────────
   ms-ventas:
@@ -99,7 +103,9 @@ services:
     networks:
       - fit-network
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+        required: false
 
   # ── MS-Notificaciones (RabbitMQ listener + Mailgun) ───────────────────────
   ms-notificaciones:
@@ -119,7 +125,8 @@ services:
     networks:
       - fit-network
     depends_on:
-      - rabbitmq
+      rabbitmq:
+        condition: service_healthy
 
   # ── BFF-Gestion ───────────────────────────────────────────────────────────
   bff-gestion:

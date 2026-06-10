@@ -7,6 +7,7 @@ passport.use(new JwtStrategy(
   {
     jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
     secretOrKey: JWT_SECRET,
+    algorithms: ['HS256', 'HS384', 'HS512'],
   },
   (payload, done) => {
     if (!payload) return done(null, false)

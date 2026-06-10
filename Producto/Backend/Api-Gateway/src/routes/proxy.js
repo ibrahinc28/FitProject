@@ -5,6 +5,8 @@ const BFF_USUARIOS_URL = process.env.BFF_USUARIOS_URL || 'http://localhost:8082'
 const BFF_VENTAS_URL   = process.env.BFF_VENTAS_URL   || 'http://localhost:8083'
 
 const addAuthHeader = (proxyReq, req) => {
+  const authHeader = req.headers['authorization']
+  if (authHeader) proxyReq.setHeader('Authorization', authHeader)
   if (req.user) {
     proxyReq.setHeader('X-User-Id',   req.user.userId   || '')
     proxyReq.setHeader('X-User-Role', req.user.role     || '')

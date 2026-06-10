@@ -15,5 +15,5 @@ export interface DashboardKpiDTO {
   pendingEvidences: number
   approvedEvidences: number
   rejectedEvidences: number
-  projects: ProjectProgressDTO[]
+  projectsProgress: ProjectProgressDTO[]
 }

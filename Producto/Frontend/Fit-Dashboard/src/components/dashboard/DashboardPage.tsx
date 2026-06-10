@@ -54,7 +54,7 @@ export default function DashboardPage() {
     { name: 'Rechazadas', cantidad: kpis!.rejectedEvidences },
   ]
 
-  const progressData = kpis!.projects.map(p => ({
+  const progressData = kpis!.projectsProgress.map(p => ({
     name: p.modelName.length > 16 ? p.modelName.slice(0, 14) + '…' : p.modelName,
     progreso: p.overallProgress,
   }))
@@ -165,7 +165,7 @@ export default function DashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {kpis!.projects.map(p => (
+                {kpis!.projectsProgress.map(p => (
                   <tr key={p.projectId} className="border-b border-gray-900 hover:bg-[#1a1a1a]">
                     <td className="py-2.5 pr-4 text-white">{p.modelName}</td>
                     <td className="py-2.5 pr-4 text-right text-gray-400">{p.stepsCompleted}/{p.totalSteps}</td>
