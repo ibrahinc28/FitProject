@@ -1,0 +1,21 @@
+services:
+  ms-notificaciones:
+    build: .
+    container_name: fit-notificaciones-service
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: 8093
+      RABBITMQ_HOST: ${RABBITMQ_HOST:-fit-rabbitmq}
+      RABBITMQ_PORT: ${RABBITMQ_PORT:-5672}
+      RABBITMQ_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_PASS: ${RABBITMQ_PASS:-guest}
+      MAILGUN_API_KEY: ${MAILGUN_API_KEY:-}
+      MAILGUN_DOMAIN: ${MAILGUN_DOMAIN:-}
+    ports:
+      - "8093:8093"
+    networks:
+      - fit-network
+
+networks:
+  fit-network:
+    external: true

@@ -1,0 +1,16 @@
+{
+  "name": "ticket-generator",
+  "version": "1.0.0",
+  "description": "Lambda: Genera PDF de ticket de compra vía S3",
+  "main": "src/handler.js",
+  "scripts": {
+    "test": "jest",
+    "package": "zip -r ticket-generator.zip src package.json node_modules"
+  },
+  "dependencies": {
+    "pdfkit": "^0.14.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
+}

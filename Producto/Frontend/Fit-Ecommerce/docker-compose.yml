@@ -1,0 +1,14 @@
+services:
+
+  fit-ecommerce:
+    build: .
+    container_name: fit-ecommerce-service
+    restart: unless-stopped
+    ports:
+      - "3002:3002"
+    networks:
+      - fit-network
+
+networks:
+  fit-network:
+    external: true

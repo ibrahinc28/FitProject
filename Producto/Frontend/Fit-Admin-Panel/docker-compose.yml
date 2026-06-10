@@ -1,0 +1,19 @@
+services:
+  fit-admin-panel:
+    build:
+      context: .
+      args:
+        VITE_DASHBOARD_URL: ${VITE_DASHBOARD_URL:-http://localhost:3001}
+        VITE_SUPERVISOR_URL: ${VITE_SUPERVISOR_URL:-http://localhost:3003}
+        VITE_ECOMMERCE_URL: ${VITE_ECOMMERCE_URL:-http://localhost:3002}
+        VITE_SUCURSAL_URL: ${VITE_SUCURSAL_URL:-http://localhost:3004}
+    container_name: fit-admin-panel
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    networks:
+      - fit-network
+
+networks:
+  fit-network:
+    external: true

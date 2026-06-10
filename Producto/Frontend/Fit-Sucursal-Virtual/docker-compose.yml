@@ -1,0 +1,16 @@
+services:
+  fit-sucursal-virtual:
+    build:
+      context: .
+      args:
+        VITE_ADMIN_PANEL_URL: ${VITE_ADMIN_PANEL_URL:-http://localhost:3000}
+    container_name: fit-sucursal-virtual
+    restart: unless-stopped
+    ports:
+      - "3004:80"
+    networks:
+      - fit-network
+
+networks:
+  fit-network:
+    external: true

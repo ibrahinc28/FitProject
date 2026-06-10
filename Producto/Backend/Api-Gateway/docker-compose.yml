@@ -1,0 +1,19 @@
+services:
+  api-gateway:
+    build: .
+    container_name: api-gateway
+    restart: unless-stopped
+    environment:
+      PORT: 4000
+      BFF_GESTION_URL:  ${BFF_GESTION_URL:-http://fit-bff-gestion:8081}
+      BFF_USUARIOS_URL: ${BFF_USUARIOS_URL:-http://fit-bff-usuarios:8082}
+      BFF_VENTAS_URL:   ${BFF_VENTAS_URL:-http://fit-bff-ventas:8083}
+      JWT_SECRET: ${JWT_SECRET:-fitproject-secret-key-must-be-at-least-32-chars-long}
+    ports:
+      - "4000:4000"
+    networks:
+      - fit-network
+
+networks:
+  fit-network:
+    external: true

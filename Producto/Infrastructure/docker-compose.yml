@@ -1,0 +1,273 @@
+##############################################################################
+# FitProject — Orquestación completa de todos los servicios
+# Uso: docker-compose up --build
+# Para producción: usar variables de entorno reales (.env o CI/CD secrets)
+##############################################################################
+
+services:
+
+  # ── Base de datos PostgreSQL (solo desarrollo local) ──────────────────────
+  postgres:
+    image: postgres:15-alpine
+    container_name: fit-postgres
+    restart: unless-stopped
+    profiles: ["local"]
+    environment:
+      POSTGRES_USER: fit_user
+      POSTGRES_PASSWORD: fit_pass
+      POSTGRES_MULTIPLE_DATABASES: fit_db,users_db,ventas_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-multiple-dbs.sh:/docker-entrypoint-initdb.d/init-multiple-dbs.sh
+    networks:
+      - fit-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fit_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── RabbitMQ ──────────────────────────────────────────────────────────────
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: fit-rabbitmq
+    restart: unless-stopped
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-guest}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - fit-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  # ── MS-Gestion (proyectos, pasos, evidencias) ─────────────────────────────
+  ms-gestion:
+    build: ../Backend/MS-Gestion
+    container_name: fit-gestion-service
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: ${DB_GESTION_URL:-jdbc:postgresql://fit-postgres:5432/fit_db}
+      DATABASE_USERNAME: ${DATABASE_USERNAME:-fit_user}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-fit_pass}
+      SERVER_PORT: 8080
+    ports:
+      - "8080:8080"
+    networks:
+      - fit-network
+    depends_on:
+      - postgres
+
+  # ── MS-Users (usuarios, roles, auth) ─────────────────────────────────────
+  ms-users:
+    build: ../Backend/MS-Users
+    container_name: fit-users-service
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: ${DB_USERS_URL:-jdbc:postgresql://fit-postgres:5432/users_db}
+      DATABASE_USERNAME: ${DATABASE_USERNAME:-fit_user}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-fit_pass}
+      SERVER_PORT: 8090
+    ports:
+      - "8090:8090"
+    networks:
+      - fit-network
+    depends_on:
+      - postgres
+
+  # ── MS-Ventas (modelos, unidades, ventas) ─────────────────────────────────
+  ms-ventas:
+    build: ../Backend/MS-Ventas
+    container_name: fit-ventas-service
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: ${DB_VENTAS_URL:-jdbc:postgresql://fit-postgres:5432/ventas_db}
+      DATABASE_USERNAME: ${DATABASE_USERNAME:-fit_user}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-fit_pass}
+      SERVER_PORT: 8091
+    ports:
+      - "8091:8091"
+    networks:
+      - fit-network
+    depends_on:
+      - postgres
+
+  # ── MS-Notificaciones (RabbitMQ listener + Mailgun) ───────────────────────
+  ms-notificaciones:
+    build: ../Backend/MS-Notificaciones
+    container_name: fit-notificaciones-service
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: 8093
+      RABBITMQ_HOST: fit-rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_PASS: ${RABBITMQ_PASS:-guest}
+      MAILGUN_API_KEY: ${MAILGUN_API_KEY:-}
+      MAILGUN_DOMAIN: ${MAILGUN_DOMAIN:-}
+    ports:
+      - "8093:8093"
+    networks:
+      - fit-network
+    depends_on:
+      - rabbitmq
+
+  # ── BFF-Gestion ───────────────────────────────────────────────────────────
+  bff-gestion:
+    build: ../Backend/BFF-Gestion
+    container_name: fit-bff-gestion
+    restart: unless-stopped
+    environment:
+      MS_GESTION_URL: http://fit-gestion-service:8080/api/v1
+      MS_USERS_URL: http://fit-users-service:8090/api/v1
+      JWT_SECRET: ${JWT_SECRET:-fitproject-secret-key-must-be-at-least-32-chars-long}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
+      SERVER_PORT: 8081
+    ports:
+      - "8081:8081"
+    networks:
+      - fit-network
+    depends_on:
+      - ms-gestion
+      - ms-users
+
+  # ── BFF-Usuarios ──────────────────────────────────────────────────────────
+  bff-usuarios:
+    build: ../Backend/BFF-Usuarios
+    container_name: fit-bff-usuarios
+    restart: unless-stopped
+    environment:
+      MS_USERS_URL: http://fit-users-service:8090
+      JWT_SECRET: ${JWT_SECRET:-fitproject-secret-key-must-be-at-least-32-chars-long}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
+      SERVER_PORT: 8082
+    ports:
+      - "8082:8082"
+    networks:
+      - fit-network
+    depends_on:
+      - ms-users
+
+  # ── BFF-Ventas ────────────────────────────────────────────────────────────
+  bff-ventas:
+    build: ../Backend/BFF-Ventas
+    container_name: fit-bff-ventas
+    restart: unless-stopped
+    environment:
+      MS_VENTAS_URL: http://fit-ventas-service:8091
+      SERVER_PORT: 8083
+    ports:
+      - "8083:8083"
+    networks:
+      - fit-network
+    depends_on:
+      - ms-ventas
+
+  # ── Api-Gateway (Node.js + Passport.js) ───────────────────────────────────
+  api-gateway:
+    build: ../Backend/Api-Gateway
+    container_name: api-gateway
+    restart: unless-stopped
+    environment:
+      PORT: 4000
+      BFF_GESTION_URL: http://fit-bff-gestion:8081
+      BFF_USUARIOS_URL: http://fit-bff-usuarios:8082
+      BFF_VENTAS_URL: http://fit-bff-ventas:8083
+      JWT_SECRET: ${JWT_SECRET:-fitproject-secret-key-must-be-at-least-32-chars-long}
+    ports:
+      - "4000:4000"
+    networks:
+      - fit-network
+    depends_on:
+      - bff-gestion
+      - bff-usuarios
+      - bff-ventas
+
+  # ── Frontend: Admin Panel (:3000) ─────────────────────────────────────────
+  fit-admin-panel:
+    build:
+      context: ../Frontend/Fit-Admin-Panel
+      args:
+        VITE_DASHBOARD_URL: ${VITE_DASHBOARD_URL:-http://localhost:3001}
+        VITE_SUPERVISOR_URL: ${VITE_SUPERVISOR_URL:-http://localhost:3003}
+        VITE_ECOMMERCE_URL: ${VITE_ECOMMERCE_URL:-http://localhost:3002}
+        VITE_SUCURSAL_URL: ${VITE_SUCURSAL_URL:-http://localhost:3004}
+    container_name: fit-admin-panel
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    networks:
+      - fit-network
+    depends_on:
+      - api-gateway
+
+  # ── Frontend: Dashboard Inversores (:3001) ────────────────────────────────
+  fit-dashboard:
+    build: ../Frontend/Fit-Dashboard
+    container_name: fit-dashboard-service
+    restart: unless-stopped
+    ports:
+      - "3001:80"
+    networks:
+      - fit-network
+    depends_on:
+      - api-gateway
+
+  # ── Frontend: eCommerce (Next.js :3002) ───────────────────────────────────
+  fit-ecommerce:
+    build: ../Frontend/Fit-Ecommerce
+    container_name: fit-ecommerce-service
+    restart: unless-stopped
+    ports:
+      - "3002:3002"
+    networks:
+      - fit-network
+
+  # ── Frontend: Supervisor (:3003) ──────────────────────────────────────────
+  fit-supervisor:
+    build:
+      context: ../Frontend/Fit-Supervisor
+      args:
+        VITE_ADMIN_PANEL_URL: http://localhost:3000
+    container_name: fit-supervisor
+    restart: unless-stopped
+    ports:
+      - "3003:80"
+    networks:
+      - fit-network
+    depends_on:
+      - api-gateway
+
+  # ── Frontend: Sucursal Virtual (:3004) ────────────────────────────────────
+  fit-sucursal-virtual:
+    build:
+      context: ../Frontend/Fit-Sucursal-Virtual
+      args:
+        VITE_ADMIN_PANEL_URL: http://localhost:3000
+    container_name: fit-sucursal-virtual
+    restart: unless-stopped
+    ports:
+      - "3004:80"
+    networks:
+      - fit-network
+    depends_on:
+      - api-gateway
+
+volumes:
+  postgres_data:
+    driver: local
+  rabbitmq_data:
+    driver: local
+
+networks:
+  fit-network:
+    driver: bridge

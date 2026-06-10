@@ -1,0 +1,208 @@
+import React, { useEffect, useState } from 'react';
+import { authService } from '../../services/authService';
+import type { AppUser, CreateUserRequest, UserRole } from '../../types/auth';
+
+const ROLES: UserRole[] = ['ADMIN', 'SUPERVISOR_OBRA', 'INVERSIONISTA', 'USUARIO_GENERAL'];
+
+const ROLE_LABELS: Record<UserRole, string> = {
+  ADMIN: 'Administrador',
+  SUPERVISOR_OBRA: 'Supervisor de Obra',
+  INVERSIONISTA: 'Inversionista',
+  USUARIO_GENERAL: 'Usuario General',
+};
+
+const ROLE_COLORS: Record<UserRole, string> = {
+  ADMIN: 'bg-purple-100 text-purple-800',
+  SUPERVISOR_OBRA: 'bg-blue-100 text-blue-800',
+  INVERSIONISTA: 'bg-green-100 text-green-800',
+  USUARIO_GENERAL: 'bg-gray-100 text-gray-800',
+};
+
+const UserManagement: React.FC = () => {
+  const [users, setUsers] = useState<AppUser[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState<CreateUserRequest>({
+    email: '', password: '', fullName: '', role: 'SUPERVISOR_OBRA',
+  });
+  const [formError, setFormError] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const fetchUsers = async () => {
+    try {
+      setUsers(await authService.getUsers());
+    } catch {
+      /* silently ignore — user sees stale list */
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchUsers(); }, []);
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError('');
+    setSaving(true);
+    try {
+      await authService.createUser(form);
+      setShowForm(false);
+      setForm({ email: '', password: '', fullName: '', role: 'SUPERVISOR_OBRA' });
+      await fetchUsers();
+    } catch {
+      setFormError('Error al crear el usuario. El email puede ya estar en uso.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleRoleChange = async (userId: string, role: string) => {
+    await authService.updateRole(userId, role);
+    await fetchUsers();
+  };
+
+  const handleToggle = async (userId: string) => {
+    await authService.toggleActive(userId);
+    await fetchUsers();
+  };
+
+  return (
+    <div className="p-6 max-w-5xl mx-auto">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-800">Gestión de Usuarios</h2>
+          <p className="text-gray-500 text-sm mt-1">{users.length} usuario{users.length !== 1 ? 's' : ''} registrado{users.length !== 1 ? 's' : ''}</p>
+        </div>
+        <button
+          onClick={() => setShowForm(!showForm)}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium"
+        >
+          {showForm ? 'Cancelar' : '+ Nuevo usuario'}
+        </button>
+      </div>
+
+      {/* Formulario de creación */}
+      {showForm && (
+        <div className="bg-white border border-gray-200 rounded-xl p-6 mb-6 shadow-sm">
+          <h3 className="font-semibold text-gray-800 mb-4">Crear nuevo usuario</h3>
+          {formError && (
+            <p className="text-red-600 text-sm mb-3 bg-red-50 p-2 rounded">{formError}</p>
+          )}
+          <form onSubmit={handleCreate} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Nombre completo</label>
+              <input
+                value={form.fullName}
+                onChange={(e) => setForm({ ...form, fullName: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <input
+                type="email"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
+              <input
+                type="password"
+                value={form.password}
+                onChange={(e) => setForm({ ...form, password: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                required
+                minLength={6}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Rol</label>
+              <select
+                value={form.role}
+                onChange={(e) => setForm({ ...form, role: e.target.value as UserRole })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+              >
+                {ROLES.map(r => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
+              </select>
+            </div>
+            <div className="sm:col-span-2 flex justify-end">
+              <button
+                type="submit"
+                disabled={saving}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition text-sm font-medium"
+              >
+                {saving ? 'Guardando...' : 'Crear usuario'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Tabla de usuarios */}
+      {loading ? (
+        <div className="flex justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+        </div>
+      ) : (
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 border-b border-gray-200">
+              <tr>
+                <th className="px-4 py-3 text-left font-semibold text-gray-600">Usuario</th>
+                <th className="px-4 py-3 text-left font-semibold text-gray-600">Rol</th>
+                <th className="px-4 py-3 text-left font-semibold text-gray-600">Estado</th>
+                <th className="px-4 py-3 text-left font-semibold text-gray-600">Creado</th>
+                <th className="px-4 py-3 text-right font-semibold text-gray-600">Acciones</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {users.map((u) => (
+                <tr key={u.userId} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-4 py-3">
+                    <div className="font-medium text-gray-900">{u.fullName}</div>
+                    <div className="text-gray-500 text-xs">{u.email}</div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <select
+                      value={u.role}
+                      onChange={(e) => handleRoleChange(u.userId, e.target.value)}
+                      className={`text-xs font-medium px-2 py-1 rounded-full border-0 cursor-pointer ${ROLE_COLORS[u.role as UserRole]}`}
+                    >
+                      {ROLES.map(r => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
+                    </select>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`text-xs font-medium px-2 py-1 rounded-full ${u.active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-700'}`}>
+                      {u.active ? 'Activo' : 'Inactivo'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-gray-500 text-xs">
+                    {u.createdAt ? new Date(u.createdAt).toLocaleDateString('es-ES') : '—'}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <button
+                      onClick={() => handleToggle(u.userId)}
+                      className={`text-xs px-3 py-1 rounded-lg font-medium transition ${
+                        u.active
+                          ? 'bg-red-50 text-red-600 hover:bg-red-100'
+                          : 'bg-green-50 text-green-600 hover:bg-green-100'
+                      }`}
+                    >
+                      {u.active ? 'Desactivar' : 'Activar'}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default UserManagement;

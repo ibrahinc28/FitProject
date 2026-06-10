@@ -1,0 +1,14 @@
+services:
+
+  fit-dashboard:
+    build: .
+    container_name: fit-dashboard-service
+    restart: unless-stopped
+    ports:
+      - "3001:80"
+    networks:
+      - fit-network
+
+networks:
+  fit-network:
+    external: true

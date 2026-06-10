@@ -1,0 +1,23 @@
+# Credenciales — NUNCA subir a Git
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+
+# Compilados Java
+target/
+*.jar
+*.class
+
+# Node
+node_modules/
+dist/
+build/
+
+# IDE
+.idea/
+.vscode/settings.json
+*.iml

@@ -1,0 +1,16 @@
+services:
+  fit-supervisor:
+    build:
+      context: .
+      args:
+        VITE_ADMIN_PANEL_URL: ${VITE_ADMIN_PANEL_URL:-http://localhost:3000}
+    container_name: fit-supervisor
+    restart: unless-stopped
+    ports:
+      - "3003:80"
+    networks:
+      - fit-network
+
+networks:
+  fit-network:
+    external: true

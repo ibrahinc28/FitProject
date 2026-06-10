@@ -1,0 +1,16 @@
+server:
+  port: ${SERVER_PORT:8093}
+
+spring:
+  application:
+    name: ms-notificaciones
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASS:guest}
+
+mailgun:
+  api-key: ${MAILGUN_API_KEY:}
+  domain: ${MAILGUN_DOMAIN:}
+  from: ${MAILGUN_FROM:noreply@fitproject.com}

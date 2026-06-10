@@ -1,0 +1,110 @@
+services:
+
+  # ── Base de datos (solo perfil local; en producción usar Neon) ────────────
+  db:
+    image: postgres:15-alpine
+    container_name: fit-postgres
+    restart: unless-stopped
+    profiles: ["local"]
+    environment:
+      POSTGRES_DB: fit_db
+      POSTGRES_USER: fit_user
+      POSTGRES_PASSWORD: fit_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - fit-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fit_user -d fit_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Microservicio de gestión ──────────────────────────────────────────────
+  ms-gestion:
+    build:
+      context: ./Backend/Fit-Ms-Gestion
+      dockerfile: Dockerfile
+    container_name: fit-gestion-service
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-jdbc:postgresql://db:5432/fit_db}
+      DATABASE_USERNAME: ${DATABASE_USERNAME:-fit_user}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-fit_pass}
+      SERVER_PORT: 8080
+    ports:
+      - "8080:8080"
+    networks:
+      - fit-network
+
+  # ── BFF (API Gateway) ─────────────────────────────────────────────────────
+  fit-bff:
+    build:
+      context: ./Backend/Fit-BFF
+      dockerfile: Dockerfile
+    container_name: fit-bff-service
+    restart: unless-stopped
+    environment:
+      MS_GESTION_URL: http://fit-gestion-service:8080/api/v1
+      SERVER_PORT: 8081
+      JWT_SECRET: ${JWT_SECRET:-fitproject-secret-key-must-be-at-least-32-chars-long}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
+    ports:
+      - "8081:8081"
+    networks:
+      - fit-network
+    depends_on:
+      - ms-gestion
+
+  # ── Frontend principal (Supervisor / Admin) ───────────────────────────────
+  fit-frontend:
+    build:
+      context: ./Frontend/Fit-Frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_DASHBOARD_URL: ${VITE_DASHBOARD_URL:-http://localhost:3001}
+        VITE_ECOMMERCE_URL: ${VITE_ECOMMERCE_URL:-http://localhost:3002}
+    container_name: fit-frontend-service
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    networks:
+      - fit-network
+    depends_on:
+      - fit-bff
+
+  # ── Dashboard de inversores ───────────────────────────────────────────────
+  fit-dashboard:
+    build:
+      context: ./Frontend/Fit-Dashboard
+      dockerfile: Dockerfile
+    container_name: fit-dashboard-service
+    restart: unless-stopped
+    ports:
+      - "3001:80"
+    networks:
+      - fit-network
+    depends_on:
+      - fit-bff
+
+  # ── eCommerce público (Next.js) ───────────────────────────────────────────
+  fit-ecommerce:
+    build:
+      context: ./Frontend/Fit-Ecommerce
+      dockerfile: Dockerfile
+    container_name: fit-ecommerce-service
+    restart: unless-stopped
+    ports:
+      - "3002:3002"
+    networks:
+      - fit-network
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  fit-network:
+    driver: bridge
