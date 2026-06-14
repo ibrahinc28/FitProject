@@ -2,22 +2,89 @@ import React, { useEffect, useRef, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { getProject, updateProject } from '../../services/projectService'
 import { uploadImage } from '../../services/cloudinaryService'
+import {
+  createAssignment,
+  deleteAssignment,
+  getAssignmentsByStep,
+} from '../../services/assignmentService'
 import type { Project, ConstructionStep } from '../../types/project'
+import type { TaskAssignment } from '../../types/assignment'
+import api from '../../services/api'
+
+interface Worker { userId: string; fullName: string; specialty?: string }
 
 const fmt = (n: number) =>
   new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(n)
 
+// ── StepCard ────────────────────────────────────────────────────────────────
+
 interface StepCardProps {
   step: ConstructionStep
   projectId: string
+  workers: Worker[]
 }
 
-const StepCard: React.FC<StepCardProps> = ({ step, projectId }) => {
+const StepCard: React.FC<StepCardProps> = ({ step, projectId, workers }) => {
   const done = step.stepStatus
-  const pct = step.progressValue
+  const pct  = step.progressValue
+
+  const [showAssign, setShowAssign]         = useState(false)
+  const [assignments, setAssignments]       = useState<TaskAssignment[]>([])
+  const [loadingAssign, setLoadingAssign]   = useState(false)
+  const [selectedWorker, setSelectedWorker] = useState('')
+  const [saving, setSaving]                 = useState(false)
+  const [assignError, setAssignError]       = useState('')
+
+  const loadAssignments = () => {
+    setLoadingAssign(true)
+    getAssignmentsByStep(step.stepId)
+      .then(setAssignments)
+      .catch(() => setAssignError('No se pudieron cargar las asignaciones'))
+      .finally(() => setLoadingAssign(false))
+  }
+
+  const toggleAssign = () => {
+    if (!showAssign) loadAssignments()
+    setShowAssign(v => !v)
+    setAssignError('')
+  }
+
+  const handleAssign = async () => {
+    if (!selectedWorker) return
+    const worker = workers.find(w => w.userId === selectedWorker)
+    if (!worker) return
+    setSaving(true)
+    setAssignError('')
+    try {
+      const a = await createAssignment({
+        workerId: worker.userId,
+        workerName: worker.fullName,
+        stepId: step.stepId,
+      })
+      setAssignments(prev => [...prev, a])
+      setSelectedWorker('')
+    } catch {
+      setAssignError('No se pudo asignar. Intenta nuevamente.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleRemove = async (assignmentId: string) => {
+    try {
+      await deleteAssignment(assignmentId)
+      setAssignments(prev => prev.filter(a => a.assignmentId !== assignmentId))
+    } catch {
+      setAssignError('No se pudo quitar la asignación.')
+    }
+  }
+
+  const assignedIds = new Set(assignments.map(a => a.workerId))
+  const availableWorkers = workers.filter(w => !assignedIds.has(w.userId))
 
   return (
     <div className="bg-[#1a1a1a] border border-gray-800 rounded-lg p-4">
+      {/* Step header */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-base flex-shrink-0">{done ? '✅' : pct > 0 ? '🔨' : '⏳'}</span>
@@ -27,41 +94,136 @@ const StepCard: React.FC<StepCardProps> = ({ step, projectId }) => {
           done ? 'text-green-400' : pct > 0 ? 'text-orange-400' : 'text-gray-500'
         }`}>{pct}%</span>
       </div>
+
+      {/* Progress bar */}
       <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden mb-3">
         <div className="h-full bg-orange-500 rounded-full transition-all" style={{ width: `${pct}%` }} />
       </div>
-      <Link
-        to={`/projects/${projectId}/steps/${step.stepId}/evidence`}
-        className="inline-flex items-center gap-1 text-xs text-orange-500 hover:text-orange-400 transition-colors"
-      >
-        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-        </svg>
-        Ver / Subir evidencias
-      </Link>
+
+      {/* Actions row */}
+      <div className="flex items-center justify-between">
+        <Link
+          to={`/projects/${projectId}/steps/${step.stepId}/evidence`}
+          className="inline-flex items-center gap-1 text-xs text-orange-500 hover:text-orange-400 transition-colors"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          Ver / Subir evidencias
+        </Link>
+
+        <button
+          onClick={toggleAssign}
+          className="flex items-center gap-1 text-xs text-gray-400 hover:text-blue-400 transition-colors"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+          Trabajadores
+        </button>
+      </div>
+
+      {/* Assignment panel */}
+      {showAssign && (
+        <div className="mt-3 pt-3 border-t border-gray-800">
+          {assignError && (
+            <p className="text-red-400 text-xs mb-2">{assignError}</p>
+          )}
+
+          {loadingAssign ? (
+            <div className="flex justify-center py-2">
+              <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : (
+            <>
+              {/* Current assignments */}
+              {assignments.length > 0 && (
+                <div className="mb-2 space-y-1">
+                  {assignments.map(a => (
+                    <div key={a.assignmentId} className="flex items-center justify-between bg-blue-900/20 border border-blue-800/40 rounded px-2 py-1">
+                      <span className="text-blue-300 text-xs font-medium">{a.workerName}</span>
+                      <button
+                        onClick={() => handleRemove(a.assignmentId)}
+                        className="text-gray-500 hover:text-red-400 transition-colors ml-2"
+                        title="Quitar asignación"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Assign new worker */}
+              {availableWorkers.length > 0 ? (
+                <div className="flex gap-2">
+                  <select
+                    value={selectedWorker}
+                    onChange={e => setSelectedWorker(e.target.value)}
+                    className="flex-1 bg-[#111] border border-gray-700 text-gray-300 text-xs rounded px-2 py-1.5 outline-none focus:border-blue-500"
+                  >
+                    <option value="">Seleccionar trabajador...</option>
+                    {availableWorkers.map(w => (
+                      <option key={w.userId} value={w.userId}>
+                        {w.fullName}{w.specialty ? ` (${w.specialty})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={() => void handleAssign()}
+                    disabled={!selectedWorker || saving}
+                    className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500 text-white text-xs rounded transition-colors"
+                  >
+                    {saving ? '...' : 'Asignar'}
+                  </button>
+                </div>
+              ) : (
+                <p className="text-gray-600 text-xs">
+                  {workers.length === 0
+                    ? 'No hay trabajadores registrados.'
+                    : 'Todos los trabajadores ya están asignados.'}
+                </p>
+              )}
+            </>
+          )}
+        </div>
+      )}
     </div>
   )
 }
+
+// ── ProjectDetail ────────────────────────────────────────────────────────────
 
 const ProjectDetail: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [project, setProject] = useState<Project | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [workers, setWorkers]   = useState<Worker[]>([])
+  const [loading, setLoading]   = useState(true)
+  const [error, setError]       = useState('')
 
   const [editingBudget, setEditingBudget] = useState(false)
-  const [budgetInput, setBudgetInput] = useState('')
-  const [savingBudget, setSavingBudget] = useState(false)
+  const [budgetInput, setBudgetInput]     = useState('')
+  const [savingBudget, setSavingBudget]   = useState(false)
 
   const [uploadingImage, setUploadingImage] = useState(false)
 
   useEffect(() => {
     if (!projectId) return
-    getProject(projectId)
-      .then((p) => { setProject(p); setBudgetInput(String(p.budget ?? '') )})
+    Promise.all([
+      getProject(projectId),
+      api.get<Worker[]>('/admin/users/workers').then(r => r.data).catch(() => []),
+    ])
+      .then(([p, ws]) => {
+        setProject(p)
+        setBudgetInput(String(p.budget ?? ''))
+        setWorkers(ws)
+      })
       .catch(() => setError('No se pudo cargar el proyecto'))
       .finally(() => setLoading(false))
   }, [projectId])
@@ -230,7 +392,7 @@ const ProjectDetail: React.FC = () => {
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
           {steps.map(step => (
-            <StepCard key={step.stepId} step={step} projectId={project.projectId} />
+            <StepCard key={step.stepId} step={step} projectId={project.projectId} workers={workers} />
           ))}
         </div>
       )}

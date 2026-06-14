@@ -28,6 +28,11 @@ public class UserController {
         return ResponseEntity.ok(userService.getAllUsers());
     }
 
+    @GetMapping("/workers")
+    public ResponseEntity<List<UserDTO>> getWorkers() {
+        return ResponseEntity.ok(userService.getWorkers());
+    }
+
     @GetMapping("/{userId}")
     public ResponseEntity<UserDTO> getUserById(@PathVariable String userId) {
         return ResponseEntity.ok(userService.getUserById(userId));

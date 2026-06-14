@@ -1,4 +1,4 @@
-export type UserRole = 'ADMIN' | 'SUPERVISOR_OBRA' | 'INVERSIONISTA' | 'USUARIO_GENERAL';
+export type UserRole = 'ADMIN' | 'SUPERVISOR_OBRA' | 'INVERSIONISTA' | 'USUARIO_GENERAL' | 'TRABAJADOR' | 'VENDEDOR';
 
 export interface AuthUser {
   userId: string;
@@ -25,6 +25,7 @@ export interface AppUser {
   email: string;
   fullName: string;
   role: UserRole;
+  specialty?: string;
   active: boolean;
   createdAt: string;
 }
@@ -34,4 +35,5 @@ export interface CreateUserRequest {
   password: string;
   fullName: string;
   role: UserRole;
+  specialty?: string;
 }

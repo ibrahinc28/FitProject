@@ -1,9 +1,11 @@
 import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { login, storeUser } from '../../services/authService'
 
 const LoginPage: React.FC = () => {
   const { setUserAndToken } = useAuth()
+  const navigate = useNavigate()
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading]   = useState(false)
@@ -15,10 +17,6 @@ const LoginPage: React.FC = () => {
     setError('')
     try {
       const res = await login(email, password)
-      if (res.role !== 'SUPERVISOR_OBRA') {
-        setError('Esta aplicación es solo para supervisores de obra.')
-        return
-      }
       const user = {
         userId:   res.userId,
         email:    res.email,
@@ -27,6 +25,11 @@ const LoginPage: React.FC = () => {
       }
       storeUser(user, res.token)
       setUserAndToken(user, res.token)
+      if (res.role === 'TRABAJADOR') {
+        navigate('/worker')
+      } else if (res.role !== 'SUPERVISOR_OBRA') {
+        setError('Esta aplicación es solo para supervisores y trabajadores.')
+      }
     } catch {
       setError('Credenciales inválidas. Verifica tu correo y contraseña.')
     } finally {

@@ -37,6 +37,12 @@ public class UserService {
         return userRepository.findAll().stream().map(this::toDTO).collect(Collectors.toList());
     }
 
+    public List<UserDTO> getWorkers() {
+        return userRepository.findAll().stream()
+                .filter(u -> UserRole.TRABAJADOR.equals(u.getRole()))
+                .map(this::toDTO).collect(Collectors.toList());
+    }
+
     public UserDTO getUserById(String userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado: " + userId));
@@ -52,6 +58,7 @@ public class UserService {
                 .passwordHash(passwordEncoder.encode(req.getPassword()))
                 .fullName(req.getFullName())
                 .role(role)
+                .specialty(req.getSpecialty())
                 .active(true)
                 .build();
         return toDTO(userRepository.save(user));
@@ -77,6 +84,7 @@ public class UserService {
                 .email(user.getEmail())
                 .fullName(user.getFullName())
                 .role(user.getRole().name())
+                .specialty(user.getSpecialty())
                 .active(user.getActive())
                 .createdAt(user.getCreatedAt())
                 .build();

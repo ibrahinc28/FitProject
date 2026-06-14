@@ -27,6 +27,9 @@ public class User {
     @Column(name = "role", nullable = false)
     private UserRole role;
 
+    @Column(name = "specialty")
+    private String specialty;
+
     @Column(name = "active", nullable = false)
     @Builder.Default
     private Boolean active = true;

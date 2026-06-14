@@ -11,6 +11,8 @@ import EvidencePage from './components/evidence/EvidencePage'
 import NotificationsPage from './components/notifications/NotificationsPage'
 import ProfilePage from './components/profile/ProfilePage'
 import { getPendingEvidences } from './services/evidenceService'
+import WorkerProtectedRoute from './components/auth/WorkerProtectedRoute'
+import WorkerDashboard from './components/worker/WorkerDashboard'
 
 const POLL_INTERVAL = 30_000
 
@@ -53,7 +55,19 @@ const App: React.FC = () => (
           </div>
         } />
 
-        {/* Protected */}
+        {/* Worker routes */}
+        <Route path="/worker" element={
+          <WorkerProtectedRoute>
+            <WorkerDashboard />
+          </WorkerProtectedRoute>
+        } />
+        <Route path="/worker/evidence/:projectId/:stepId" element={
+          <WorkerProtectedRoute>
+            <AppShell><EvidencePage /></AppShell>
+          </WorkerProtectedRoute>
+        } />
+
+        {/* Protected (supervisor) */}
         <Route path="/" element={
           <ProtectedRoute>
             <AppShell><HomePage /></AppShell>

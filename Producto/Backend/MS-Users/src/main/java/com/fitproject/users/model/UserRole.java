@@ -5,5 +5,6 @@ public enum UserRole {
     SUPERVISOR_OBRA,
     INVERSIONISTA,
     USUARIO_GENERAL,
-    VENDEDOR
+    VENDEDOR,
+    TRABAJADOR
 }

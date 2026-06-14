@@ -41,6 +41,23 @@ public interface GestionClient {
     EvidenceDTO rejectEvidence(@PathVariable("evidenceId") String evidenceId,
                                @RequestParam("supervisorId") String supervisorId);
 
+    // ── Asignaciones ───────────────────────────────────────────────
+    @PostMapping("/assignments")
+    TaskAssignmentDTO createAssignment(@RequestBody java.util.Map<String, String> body);
+
+    @GetMapping("/assignments/worker/{workerId}")
+    java.util.List<TaskAssignmentDTO> getAssignmentsByWorker(@PathVariable("workerId") String workerId);
+
+    @GetMapping("/assignments/step/{stepId}")
+    java.util.List<TaskAssignmentDTO> getAssignmentsByStep(@PathVariable("stepId") String stepId);
+
+    @PatchMapping("/assignments/{assignmentId}/status")
+    TaskAssignmentDTO updateAssignmentStatus(@PathVariable("assignmentId") String assignmentId,
+                                             @RequestParam("status") String status);
+
+    @DeleteMapping("/assignments/{assignmentId}")
+    void deleteAssignment(@PathVariable("assignmentId") String assignmentId);
+
     // ── Inner request DTOs ─────────────────────────────────────────
     class CreateProjectRequest {
         private String modelName;

@@ -32,7 +32,7 @@ const LoginPage: React.FC = () => {
         return
       }
 
-      if (data.role === 'SUPERVISOR_OBRA') {
+      if (data.role === 'SUPERVISOR_OBRA' || data.role === 'TRABAJADOR') {
         const user = { userId: data.userId, email: data.email, fullName: data.fullName, role: data.role }
         const params = new URLSearchParams({
           token: data.token,

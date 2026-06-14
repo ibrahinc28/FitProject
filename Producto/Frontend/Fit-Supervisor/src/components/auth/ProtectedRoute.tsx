@@ -10,6 +10,10 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
     return <LoginPage />
   }
 
+  if (user?.role === 'TRABAJADOR') {
+    return <Navigate to="/worker" replace />
+  }
+
   if (user?.role !== 'SUPERVISOR_OBRA') {
     return <Navigate to="/unauthorized" replace />
   }

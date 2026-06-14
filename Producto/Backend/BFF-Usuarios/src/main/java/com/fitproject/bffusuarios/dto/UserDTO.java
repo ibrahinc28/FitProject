@@ -1,9 +1,9 @@
-package com.fitproject.users.dto;
+package com.fitproject.bffusuarios.dto;
 
-import lombok.*;
+import lombok.Data;
 import java.time.LocalDateTime;
 
-@Data @NoArgsConstructor @AllArgsConstructor @Builder
+@Data
 public class UserDTO {
     private String userId;
     private String email;

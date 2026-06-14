@@ -19,7 +19,7 @@ const ProjectList: React.FC<ProjectListProps> = ({ onProjectSelect }) => {
         setLoading(false);
       })
       .catch(() => {
-        setError('No se pudo conectar con el servidor. Verifica que Docker esté corriendo.');
+        setError('No se pudo conectar con el servidor. Verifica que los servicios estén corriendo.');
         setLoading(false);
       });
   }, []);

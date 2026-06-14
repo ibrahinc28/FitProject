@@ -17,4 +17,5 @@ public class CreateUserRequest {
     private String fullName;
     @NotBlank
     private String role;
+    private String specialty;
 }
