@@ -16,7 +16,20 @@ public interface GestionClient {
     @GetMapping("/projects/{projectId}")
     ProjectDTO getProjectById(@PathVariable("projectId") String projectId);
 
+    @PostMapping("/projects")
+    ProjectDTO createProject(@RequestBody CreateProjectRequest request);
+
+    @PatchMapping("/projects/{projectId}")
+    ProjectDTO updateProject(@PathVariable("projectId") String projectId,
+                             @RequestBody UpdateProjectRequest request);
+
     // ── Evidencias ─────────────────────────────────────────────────
+    @GetMapping("/evidences/step/{stepId}")
+    List<EvidenceDTO> getEvidenceByStep(@PathVariable("stepId") String stepId);
+
+    @GetMapping("/evidences/pending")
+    List<EvidenceDTO> getPendingEvidences();
+
     @PostMapping("/evidences/submit")
     EvidenceDTO submitEvidence(@RequestBody EvidenceDTO request);
 
@@ -27,5 +40,48 @@ public interface GestionClient {
     @PostMapping("/evidences/{evidenceId}/reject")
     EvidenceDTO rejectEvidence(@PathVariable("evidenceId") String evidenceId,
                                @RequestParam("supervisorId") String supervisorId);
+
+    // ── Inner request DTOs ─────────────────────────────────────────
+    class CreateProjectRequest {
+        private String modelName;
+        private String description;
+        private String imageUrl;
+        private Double budget;
+
+        public CreateProjectRequest() {}
+        public CreateProjectRequest(String modelName, String description, String imageUrl, Double budget) {
+            this.modelName = modelName;
+            this.description = description;
+            this.imageUrl = imageUrl;
+            this.budget = budget;
+        }
+        public String getModelName() { return modelName; }
+        public void setModelName(String m) { this.modelName = m; }
+        public String getDescription() { return description; }
+        public void setDescription(String d) { this.description = d; }
+        public String getImageUrl() { return imageUrl; }
+        public void setImageUrl(String u) { this.imageUrl = u; }
+        public Double getBudget() { return budget; }
+        public void setBudget(Double b) { this.budget = b; }
+    }
+
+    class UpdateProjectRequest {
+        private String description;
+        private String imageUrl;
+        private Double budget;
+
+        public UpdateProjectRequest() {}
+        public UpdateProjectRequest(String description, String imageUrl, Double budget) {
+            this.description = description;
+            this.imageUrl = imageUrl;
+            this.budget = budget;
+        }
+        public String getDescription() { return description; }
+        public void setDescription(String d) { this.description = d; }
+        public String getImageUrl() { return imageUrl; }
+        public void setImageUrl(String u) { this.imageUrl = u; }
+        public Double getBudget() { return budget; }
+        public void setBudget(Double b) { this.budget = b; }
+    }
 
 }

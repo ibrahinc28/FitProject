@@ -23,17 +23,25 @@ import java.util.List;
 public class ProjectDTO {
     
     private String projectId;
-    
+
+    private String containerId;
+
     @NotBlank(message = "El nombre del modelo es requerido")
     private String modelName;
-    
+
+    private String description;
+
+    private String imageUrl;
+
+    private Double budget;
+
     @NotNull(message = "El progreso general es requerido")
     @Min(value = 0, message = "El progreso no puede ser menor a 0")
     @Max(value = 100, message = "El progreso no puede ser mayor a 100")
     private Integer overallProgress;
-    
+
     private LocalDateTime createdAt;
-    
+
     private LocalDateTime updatedAt;
     
     private List<StepDTO> constructionSteps;

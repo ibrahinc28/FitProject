@@ -1,19 +1,23 @@
 export interface ConstructionStep {
   stepId: string
+  projectId?: string
   stepName: string
-  description: string
-  progress: number
-  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED'
-  order: number
+  stepStatus: boolean
+  progressValue: number
+  createdAt?: string
+  updatedAt?: string
 }
 
 export interface Project {
   projectId: string
+  containerId?: string
   modelName: string
-  clientName: string
-  location: string
+  description?: string
+  imageUrl?: string
+  budget?: number
   overallProgress: number
-  status: 'ACTIVE' | 'COMPLETED' | 'PAUSED'
+  createdAt?: string
+  updatedAt?: string
   constructionSteps: ConstructionStep[]
-  startDate: string
+  evidences?: import('./evidence').Evidence[]
 }

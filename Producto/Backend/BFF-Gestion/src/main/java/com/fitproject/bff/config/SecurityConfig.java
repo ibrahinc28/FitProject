@@ -35,6 +35,8 @@ public class SecurityConfig {
                 .requestMatchers("/auth/**").permitAll()
                 .requestMatchers("/swagger-ui/**", "/api-docs/**", "/swagger-ui.html").permitAll()
                 .requestMatchers("/api/v1/mobile/**").hasAnyRole("ADMIN", "SUPERVISOR_OBRA")
+                .requestMatchers("/api/v1/projects/**").hasAnyRole("ADMIN", "SUPERVISOR_OBRA")
+                .requestMatchers("/api/v1/evidence/**").hasAnyRole("ADMIN", "SUPERVISOR_OBRA")
                 .requestMatchers("/api/v1/dashboard/**").hasAnyRole("ADMIN", "INVERSIONISTA")
                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
