@@ -22,8 +22,7 @@ public class EvidenceDTO {
     @NotBlank(message = "El ID del paso es requerido")
     private String stepId;
 
-    @NotBlank(message = "La URL de la evidencia es requerida")
-    private String evidenceUrl;
+    private String evidenceUrl;  // optional — absent when creating an ASSIGNED task
 
     private String description;
 
@@ -34,6 +33,8 @@ public class EvidenceDTO {
     private String submittedBy;
 
     private String supervisorId;
+    private String assignedWorkerId;
+    private String assignedWorkerName;
 
     private String status;
 

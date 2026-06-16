@@ -8,6 +8,8 @@ export interface Evidence {
   description: string
   evidenceUrl: string
   submittedBy: string
+  assignedWorkerId?: string
+  assignedWorkerName?: string
   status: EvidenceStatus
   createdAt: string
   updatedAt: string
@@ -20,4 +22,6 @@ export interface SubmitEvidenceRequest {
   description: string
   submittedBy: string
   evidenceUrl: string
+  assignedWorkerId?: string
+  assignedWorkerName?: string
 }

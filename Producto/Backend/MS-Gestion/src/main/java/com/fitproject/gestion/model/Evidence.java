@@ -23,8 +23,8 @@ public class Evidence {
     @JoinColumn(name = "step_id", nullable = false)
     private ConstructionStep step;
 
-    @Column(name = "evidence_url", nullable = false)
-    private String evidenceUrl;
+    @Column(name = "evidence_url")
+    private String evidenceUrl;  // null/empty for ASSIGNED tasks; populated when worker submits
 
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
@@ -37,6 +37,12 @@ public class Evidence {
 
     @Column(name = "supervisor_id")
     private String supervisorId;
+
+    @Column(name = "assigned_worker_id")
+    private String assignedWorkerId;
+
+    @Column(name = "assigned_worker_name")
+    private String assignedWorkerName;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)

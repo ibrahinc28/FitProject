@@ -13,6 +13,8 @@ public class EvidenceDTO {
     private String name;
     private String submittedBy;
     private String supervisorId;
+    private String assignedWorkerId;
+    private String assignedWorkerName;
     private String status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

@@ -64,6 +64,14 @@ public class UserService {
         return toDTO(userRepository.save(user));
     }
 
+    public void validatePassword(String email, String password) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+        if (!user.getActive()) throw new IllegalArgumentException("Usuario inactivo");
+        if (!passwordEncoder.matches(password, user.getPasswordHash()))
+            throw new IllegalArgumentException("Contraseña incorrecta");
+    }
+
     public UserDTO updateUserRole(String userId, String role) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado: " + userId));

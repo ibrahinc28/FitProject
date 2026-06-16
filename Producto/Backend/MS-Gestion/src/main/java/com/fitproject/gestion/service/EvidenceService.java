@@ -37,16 +37,53 @@ public class EvidenceService {
         Project project = projectRepository.findById(req.getProjectId())
                 .orElseThrow(() -> new IllegalArgumentException("Proyecto no encontrado: " + req.getProjectId()));
 
+        boolean isTaskAssignment = req.getAssignedWorkerId() != null && !req.getAssignedWorkerId().isBlank();
+        EvidenceStatus initialStatus = EvidenceStatus.PENDING; // DB constraint only allows PENDING/APPROVED/REJECTED
+
         Evidence evidence = Evidence.builder()
                 .project(project)
                 .step(step)
-                .evidenceUrl(req.getEvidenceUrl())
-                .description(req.getDescription())
+                .evidenceUrl(req.getEvidenceUrl() != null ? req.getEvidenceUrl() : "")
+                .description(req.getDescription() != null ? req.getDescription() : "")
                 .name(req.getName())
                 .submittedBy(req.getSubmittedBy())
-                .status(EvidenceStatus.PENDING)
+                .assignedWorkerId(isTaskAssignment ? req.getAssignedWorkerId() : null)
+                .assignedWorkerName(isTaskAssignment ? req.getAssignedWorkerName() : null)
+                .status(initialStatus)
                 .build();
-        return toDTO(evidenceRepository.save(evidence));
+
+        Evidence saved = evidenceRepository.save(evidence);
+
+        // Recalculate progress only when real evidence is submitted (not just a task assignment)
+        if (!isTaskAssignment) {
+            recalculateStepProgress(step, project);
+        }
+
+        return toDTO(saved);
+    }
+
+    /**
+     * Called when an assigned worker uploads their evidence for a task.
+     * Changes status from ASSIGNED → PENDING (awaiting supervisor approval).
+     * This is where a notification to the supervisor should be triggered
+     * once a notification system is in place.
+     */
+    @Transactional
+    public EvidenceDTO workerSubmit(String evidenceId, String evidenceUrl, String description) {
+        Evidence evidence = findById(evidenceId);
+        if (evidence.getAssignedWorkerId() == null || evidence.getAssignedWorkerId().isBlank()) {
+            throw new IllegalArgumentException("Esta evidencia no tiene un trabajador asignado");
+        }
+        if (evidence.getEvidenceUrl() != null && !evidence.getEvidenceUrl().isBlank()) {
+            throw new IllegalArgumentException("El trabajador ya subió la evidencia para esta tarea");
+        }
+        evidence.setEvidenceUrl(evidenceUrl != null ? evidenceUrl : "");
+        if (description != null && !description.isBlank()) {
+            evidence.setDescription(description);
+        }
+        // Status stays PENDING — supervisor still needs to approve
+        evidenceRepository.save(evidence);
+        return toDTO(evidence);
     }
 
     @Transactional
@@ -55,8 +92,10 @@ public class EvidenceService {
         evidence.setStatus(EvidenceStatus.APPROVED);
         evidence.setSupervisorId(supervisorId);
         evidenceRepository.save(evidence);
-
-        recalculateStepProgress(evidence.getStep());
+        ConstructionStep step = evidence.getStep();
+        Project project = projectRepository.findById(step.getProject().getProjectId())
+                .orElseThrow(() -> new IllegalArgumentException("Proyecto no encontrado"));
+        recalculateStepProgress(step, project);
         return toDTO(evidence);
     }
 
@@ -66,12 +105,24 @@ public class EvidenceService {
         evidence.setStatus(EvidenceStatus.REJECTED);
         evidence.setSupervisorId(supervisorId);
         evidenceRepository.save(evidence);
-
-        recalculateStepProgress(evidence.getStep());
+        ConstructionStep step = evidence.getStep();
+        Project project = projectRepository.findById(step.getProject().getProjectId())
+                .orElseThrow(() -> new IllegalArgumentException("Proyecto no encontrado"));
+        recalculateStepProgress(step, project);
         return toDTO(evidence);
     }
 
-    private void recalculateStepProgress(ConstructionStep step) {
+    @Transactional
+    public void delete(String evidenceId) {
+        Evidence evidence = findById(evidenceId);
+        ConstructionStep step = evidence.getStep();
+        Project project = projectRepository.findById(step.getProject().getProjectId())
+                .orElseThrow(() -> new IllegalArgumentException("Proyecto no encontrado"));
+        evidenceRepository.delete(evidence);
+        recalculateStepProgress(step, project);
+    }
+
+    private void recalculateStepProgress(ConstructionStep step, Project project) {
         List<Evidence> all = evidenceRepository.findByStep_StepId(step.getStepId());
         long total    = all.size();
         long approved = all.stream().filter(e -> e.getStatus() == EvidenceStatus.APPROVED).count();
@@ -80,7 +131,6 @@ public class EvidenceService {
         step.setStepStatus(progress >= 100);
         stepRepository.save(step);
 
-        Project project = step.getProject();
         project.recalculateProgress();
         projectRepository.save(project);
     }
@@ -100,6 +150,8 @@ public class EvidenceService {
                 .name(e.getName())
                 .submittedBy(e.getSubmittedBy())
                 .supervisorId(e.getSupervisorId())
+                .assignedWorkerId(e.getAssignedWorkerId())
+                .assignedWorkerName(e.getAssignedWorkerName())
                 .status(e.getStatus().name())
                 .createdAt(e.getCreatedAt())
                 .updatedAt(e.getUpdatedAt())

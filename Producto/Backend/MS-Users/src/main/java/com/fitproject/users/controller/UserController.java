@@ -23,6 +23,12 @@ public class UserController {
         return ResponseEntity.ok(userService.authenticate(request.getEmail(), request.getPassword()));
     }
 
+    @PostMapping("/validate-password")
+    public ResponseEntity<Void> validatePassword(@RequestBody java.util.Map<String, String> body) {
+        userService.validatePassword(body.get("email"), body.get("password"));
+        return ResponseEntity.ok().build();
+    }
+
     @GetMapping
     public ResponseEntity<List<UserDTO>> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUsers());

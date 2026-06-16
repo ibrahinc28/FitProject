@@ -33,6 +33,13 @@ public interface GestionClient {
     @PostMapping("/evidences/submit")
     EvidenceDTO submitEvidence(@RequestBody EvidenceDTO request);
 
+    @PostMapping("/evidences/{evidenceId}/worker-submit")
+    EvidenceDTO workerSubmitEvidence(@PathVariable("evidenceId") String evidenceId,
+                                     @RequestBody EvidenceDTO request);
+
+    @DeleteMapping("/evidences/{evidenceId}")
+    void deleteEvidence(@PathVariable("evidenceId") String evidenceId);
+
     @PostMapping("/evidences/{evidenceId}/approve")
     EvidenceDTO approveEvidence(@PathVariable("evidenceId") String evidenceId,
                                 @RequestParam("supervisorId") String supervisorId);

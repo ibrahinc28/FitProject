@@ -29,3 +29,19 @@ export const rejectEvidence = async (evidenceId: string, supervisorId: string): 
   })
   return data
 }
+
+export const deleteEvidence = async (evidenceId: string, email: string, password: string): Promise<void> => {
+  await api.post(`/evidence/${evidenceId}/delete`, { email, password })
+}
+
+export const workerSubmitEvidence = async (
+  evidenceId: string,
+  evidenceUrl: string,
+  description?: string
+): Promise<Evidence> => {
+  const { data } = await api.post<Evidence>(`/evidence/${evidenceId}/worker-submit`, {
+    evidenceUrl,
+    description,
+  })
+  return data
+}

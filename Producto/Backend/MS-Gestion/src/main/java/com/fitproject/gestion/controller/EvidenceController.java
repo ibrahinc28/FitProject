@@ -51,4 +51,19 @@ public class EvidenceController {
         log.info("POST /api/v1/evidences/{}/reject", evidenceId);
         return ResponseEntity.ok(evidenceService.reject(evidenceId, supervisorId));
     }
+
+    @DeleteMapping("/{evidenceId}")
+    public ResponseEntity<Void> delete(@PathVariable String evidenceId) {
+        log.info("DELETE /api/v1/evidences/{}", evidenceId);
+        evidenceService.delete(evidenceId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{evidenceId}/worker-submit")
+    public ResponseEntity<EvidenceDTO> workerSubmit(
+            @PathVariable String evidenceId,
+            @RequestBody EvidenceDTO req) {
+        log.info("POST /api/v1/evidences/{}/worker-submit", evidenceId);
+        return ResponseEntity.ok(evidenceService.workerSubmit(evidenceId, req.getEvidenceUrl(), req.getDescription()));
+    }
 }
