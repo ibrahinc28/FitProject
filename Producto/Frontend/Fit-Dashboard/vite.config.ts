@@ -7,7 +7,7 @@ export default defineConfig({
     port: 3001,
     proxy: {
       '/api': { target: 'http://localhost:4000', changeOrigin: true },
-      '/auth': { target: 'http://localhost:4000', changeOrigin: true },
+      '/auth/login': { target: 'http://localhost:4000', changeOrigin: true },
     }
   }
 })

@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { getEvidenceByStep, submitEvidence } from '../../services/evidenceService'
 import { uploadImage } from '../../services/cloudinaryService'
+import { getWorkers, type Worker } from '../../services/workerService'
 import type { Evidence } from '../../types/evidence'
 import { useAuth } from '../../context/AuthContext'
 
@@ -23,10 +24,11 @@ const EvidencePage: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [evidences, setEvidences] = useState<Evidence[]>([])
+  const [workers, setWorkers] = useState<Worker[]>([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ name: '', description: '' })
+  const [form, setForm] = useState({ name: '', description: '', workerId: '', workerName: '' })
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [uploadProgress, setUploadProgress] = useState<'idle' | 'uploading' | 'done'>('idle')
@@ -43,6 +45,10 @@ const EvidencePage: React.FC = () => {
   }
 
   useEffect(() => { loadEvidence() }, [stepId])
+
+  useEffect(() => {
+    getWorkers().then(setWorkers).catch(() => {})
+  }, [])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -70,9 +76,11 @@ const EvidencePage: React.FC = () => {
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
+  const isSupervisor = user?.role === 'SUPERVISOR_OBRA' || user?.role === 'ADMIN'
+
   const handleSubmit = async () => {
     if (!stepId || !projectId) return
-    if (!selectedFile) {
+    if (!selectedFile && !isSupervisor) {
       setError('Debes seleccionar una imagen')
       return
     }
@@ -81,9 +89,13 @@ const EvidencePage: React.FC = () => {
     setSuccess('')
 
     try {
-      setUploadProgress('uploading')
-      const { url } = await uploadImage(selectedFile)
-      setUploadProgress('done')
+      let url = ''
+      if (selectedFile) {
+        setUploadProgress('uploading')
+        const uploaded = await uploadImage(selectedFile)
+        url = uploaded.url
+        setUploadProgress('done')
+      }
 
       await submitEvidence({
         stepId,
@@ -91,11 +103,11 @@ const EvidencePage: React.FC = () => {
         name: form.name,
         description: form.description,
         evidenceUrl: url,
-        submittedBy: user?.fullName ?? user?.email ?? 'Supervisor',
+        submittedBy: form.workerName || user?.fullName || 'Supervisor',
       })
 
       setSuccess('Evidencia enviada correctamente. Pendiente de aprobación.')
-      setForm({ name: '', description: '' })
+      setForm({ name: '', description: '', workerId: '', workerName: '' })
       handleRemoveFile()
       setShowForm(false)
       setUploadProgress('idle')
@@ -111,7 +123,7 @@ const EvidencePage: React.FC = () => {
 
   const handleCancel = () => {
     setShowForm(false)
-    setForm({ name: '', description: '' })
+    setForm({ name: '', description: '', workerId: '', workerName: '' })
     handleRemoveFile()
     setError('')
     setUploadProgress('idle')
@@ -152,7 +164,10 @@ const EvidencePage: React.FC = () => {
 
           {/* Selector de imagen */}
           <div>
-            <label className="block text-sm text-gray-300 mb-2">Imagen de evidencia</label>
+            <label className="block text-sm text-gray-300 mb-2">
+              Imagen de evidencia
+              {isSupervisor && <span className="ml-2 text-xs text-gray-500">(opcional para supervisor)</span>}
+            </label>
             {!previewUrl ? (
               <button
                 type="button"
@@ -189,7 +204,7 @@ const EvidencePage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-sm text-gray-300 mb-1">Nombre</label>
+            <label className="block text-sm text-gray-300 mb-1">Nombre de la evidencia</label>
             <input
               type="text"
               value={form.name}
@@ -212,10 +227,29 @@ const EvidencePage: React.FC = () => {
             />
           </div>
 
+          <div>
+            <label className="block text-sm text-gray-300 mb-1">Asignar a trabajador</label>
+            <select
+              value={form.workerId}
+              onChange={(e) => {
+                const selected = workers.find(w => w.userId === e.target.value)
+                setForm({ ...form, workerId: e.target.value, workerName: selected?.fullName ?? '' })
+              }}
+              className="w-full px-3 py-2 bg-[#222] border border-gray-700 text-white rounded-lg text-sm outline-none focus:border-orange-500"
+            >
+              <option value="">— Sin asignar (yo mismo) —</option>
+              {workers.map(w => (
+                <option key={w.userId} value={w.userId}>
+                  {w.fullName}{w.specialty ? ` · ${w.specialty}` : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div className="flex gap-3">
             <button
               type="submit"
-              disabled={submitting || !selectedFile}
+              disabled={submitting || (!selectedFile && !isSupervisor)}
               className="flex-1 py-2 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-700 disabled:text-gray-500 text-white text-sm font-semibold rounded-lg transition flex items-center justify-center gap-2"
             >
               {uploadProgress === 'uploading' && (

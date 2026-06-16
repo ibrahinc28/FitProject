@@ -39,7 +39,7 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ pendingCount = 0 }) => {
-  const { user, logout } = useAuth()
+  const { user, token, logout } = useAuth()
 
   const handleLogout = () => {
     logout()
@@ -113,12 +113,17 @@ const Sidebar: React.FC<SidebarProps> = ({ pendingCount = 0 }) => {
           <div className="border-t border-gray-800" />
         </div>
 
-        {/* External: Dashboard */}
-        <a
-          href={DASHBOARD_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+        {/* Dashboard — pasa el token actual para no pedir login de nuevo */}
+        <button
+          onClick={() => {
+            if (!user || !token) return
+            const params = new URLSearchParams({
+              token,
+              user: JSON.stringify({ userId: user.userId, email: user.email, fullName: user.fullName, role: user.role }),
+            })
+            window.open(`${DASHBOARD_URL}/auth?${params.toString()}`, '_blank')
+          }}
+          className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
         >
           <span className="w-5 h-5 flex-shrink-0">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -126,11 +131,11 @@ const Sidebar: React.FC<SidebarProps> = ({ pendingCount = 0 }) => {
                 d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
           </span>
-          <span className="flex-1">Dashboard</span>
+          <span className="flex-1">Dashboard KPIs</span>
           <svg className="w-3.5 h-3.5 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
           </svg>
-        </a>
+        </button>
       </nav>
 
       {/* User footer */}

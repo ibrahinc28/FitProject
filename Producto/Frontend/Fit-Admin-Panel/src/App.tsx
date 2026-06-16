@@ -46,7 +46,17 @@ function App() {
             <div className="min-h-screen flex items-center justify-center bg-slate-50">
               <div className="text-center">
                 <h1 className="text-2xl font-bold text-gray-800 mb-2">Acceso denegado</h1>
-                <p className="text-gray-500">No tienes permiso para ver esta página.</p>
+                <p className="text-gray-500 mb-4">No tienes permiso para ver esta página.</p>
+                <button
+                  onClick={() => {
+                    localStorage.removeItem('fit_token')
+                    localStorage.removeItem('fit_user')
+                    window.location.href = '/login'
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                >
+                  Volver al login
+                </button>
               </div>
             </div>
           } />

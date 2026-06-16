@@ -11,7 +11,8 @@ spring:
   cloud:
     openfeign:
       httpclient:
-        enabled: true
+        hc5:
+          enabled: true
         max-connections: 200
         max-connections-per-route: 50
       compression:

@@ -58,6 +58,14 @@ public interface GestionClient {
     @DeleteMapping("/assignments/{assignmentId}")
     void deleteAssignment(@PathVariable("assignmentId") String assignmentId);
 
+    // ── Pasos ──────────────────────────────────────────────────────
+    @PostMapping("/steps")
+    StepDTO createStep(@RequestBody CreateStepRequest request);
+
+    @PostMapping("/steps/{stepId}/name")
+    StepDTO renameStep(@PathVariable("stepId") String stepId,
+                       @RequestBody java.util.Map<String, String> body);
+
     // ── Inner request DTOs ─────────────────────────────────────────
     class CreateProjectRequest {
         private String modelName;

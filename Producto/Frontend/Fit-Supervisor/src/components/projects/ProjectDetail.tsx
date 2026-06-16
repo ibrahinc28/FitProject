@@ -7,6 +7,7 @@ import {
   deleteAssignment,
   getAssignmentsByStep,
 } from '../../services/assignmentService'
+import { createStep, renameStep } from '../../services/stepService'
 import type { Project, ConstructionStep } from '../../types/project'
 import type { TaskAssignment } from '../../types/assignment'
 import api from '../../services/api'
@@ -206,6 +207,7 @@ const ProjectDetail: React.FC = () => {
   const [workers, setWorkers]   = useState<Worker[]>([])
   const [loading, setLoading]   = useState(true)
   const [error, setError]       = useState('')
+  const [actionError, setActionError] = useState('')
 
   const [editingBudget, setEditingBudget] = useState(false)
   const [budgetInput, setBudgetInput]     = useState('')
@@ -231,6 +233,7 @@ const ProjectDetail: React.FC = () => {
   const saveBudget = async () => {
     if (!projectId || !project) return
     setSavingBudget(true)
+    setActionError('')
     try {
       const updated = await updateProject(projectId, {
         budget: budgetInput ? parseFloat(budgetInput) : undefined,
@@ -238,7 +241,7 @@ const ProjectDetail: React.FC = () => {
       setProject(updated)
       setEditingBudget(false)
     } catch {
-      setError('No se pudo actualizar el presupuesto')
+      setActionError('No se pudo actualizar el presupuesto')
     } finally {
       setSavingBudget(false)
     }
@@ -248,15 +251,63 @@ const ProjectDetail: React.FC = () => {
     const file = e.target.files?.[0]
     if (!file || !projectId) return
     setUploadingImage(true)
+    setActionError('')
     try {
       const { url } = await uploadImage(file)
       const updated = await updateProject(projectId, { imageUrl: url })
       setProject(updated)
     } catch {
-      setError('No se pudo actualizar la imagen')
+      setActionError('No se pudo actualizar la imagen')
     } finally {
       setUploadingImage(false)
       if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
+  const [editingStepId, setEditingStepId] = useState<string | null>(null)
+  const [editingStepName, setEditingStepName] = useState('')
+  const [savingStepName, setSavingStepName] = useState(false)
+
+  const [addingStep, setAddingStep] = useState(false)
+  const [newStepName, setNewStepName] = useState('')
+  const [savingNewStep, setSavingNewStep] = useState(false)
+
+  const handleRenameStep = async (stepId: string) => {
+    if (!editingStepName.trim()) return
+    setSavingStepName(true)
+    setActionError('')
+    try {
+      const updated = await renameStep(stepId, editingStepName.trim())
+      setProject(prev => prev ? {
+        ...prev,
+        constructionSteps: prev.constructionSteps?.map(s =>
+          s.stepId === stepId ? { ...s, stepName: updated.stepName } : s
+        )
+      } : prev)
+      setEditingStepId(null)
+    } catch {
+      setActionError('No se pudo renombrar el paso')
+    } finally {
+      setSavingStepName(false)
+    }
+  }
+
+  const handleAddStep = async () => {
+    if (!projectId || !newStepName.trim()) return
+    setSavingNewStep(true)
+    setActionError('')
+    try {
+      const step = await createStep(projectId, newStepName.trim())
+      setProject(prev => prev ? {
+        ...prev,
+        constructionSteps: [...(prev.constructionSteps ?? []), step as unknown as ConstructionStep]
+      } : prev)
+      setNewStepName('')
+      setAddingStep(false)
+    } catch {
+      setActionError('No se pudo agregar el paso')
+    } finally {
+      setSavingNewStep(false)
     }
   }
 
@@ -385,14 +436,102 @@ const ProjectDetail: React.FC = () => {
         </div>
       </div>
 
+      {/* Error de acción inline (no reemplaza la página) */}
+      {actionError && (
+        <div className="mb-4 flex items-center justify-between p-3 bg-red-900/30 border border-red-700 rounded-lg text-red-400 text-sm">
+          <span>{actionError}</span>
+          <button onClick={() => setActionError('')} className="ml-3 text-red-500 hover:text-red-300 text-lg leading-none">✕</button>
+        </div>
+      )}
+
       {/* Pasos */}
-      <h2 className="text-base font-semibold text-white mb-4">Pasos de construcción</h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-base font-semibold text-white">Pasos de construcción</h2>
+        <button
+          onClick={() => { setAddingStep(true); setNewStepName(''); setActionError('') }}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white text-xs font-semibold rounded-lg transition"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          Nuevo paso
+        </button>
+      </div>
+
+      {/* Formulario nuevo paso */}
+      {addingStep && (
+        <div className="bg-[#1a1a1a] border border-orange-500/30 rounded-lg p-4 mb-4 flex gap-2">
+          <input
+            autoFocus
+            type="text"
+            value={newStepName}
+            onChange={e => setNewStepName(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') void handleAddStep(); if (e.key === 'Escape') setAddingStep(false) }}
+            placeholder="Nombre del nuevo paso..."
+            className="flex-1 px-3 py-2 bg-[#111] border border-gray-700 text-white text-sm rounded-lg outline-none focus:border-orange-500"
+          />
+          <button
+            onClick={() => void handleAddStep()}
+            disabled={savingNewStep || !newStepName.trim()}
+            className="px-3 py-2 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-700 disabled:text-gray-500 text-white text-sm rounded-lg transition"
+          >
+            {savingNewStep ? '...' : 'Agregar'}
+          </button>
+          <button
+            onClick={() => setAddingStep(false)}
+            className="px-3 py-2 bg-gray-800 hover:bg-gray-700 text-gray-400 text-sm rounded-lg transition"
+          >
+            Cancelar
+          </button>
+        </div>
+      )}
+
       {steps.length === 0 ? (
         <p className="text-gray-500 text-sm">Este proyecto no tiene pasos de construcción.</p>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
           {steps.map(step => (
-            <StepCard key={step.stepId} step={step} projectId={project.projectId} workers={workers} />
+            <div key={step.stepId}>
+              {/* Edición de nombre del paso */}
+              {editingStepId === step.stepId ? (
+                <div className="flex gap-2 mb-1">
+                  <input
+                    autoFocus
+                    type="text"
+                    value={editingStepName}
+                    onChange={e => setEditingStepName(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') void handleRenameStep(step.stepId); if (e.key === 'Escape') setEditingStepId(null) }}
+                    className="flex-1 px-2 py-1.5 bg-[#111] border border-orange-500 text-white text-sm rounded-lg outline-none"
+                  />
+                  <button
+                    onClick={() => void handleRenameStep(step.stepId)}
+                    disabled={savingStepName}
+                    className="px-2.5 py-1.5 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-700 text-white text-xs rounded-lg transition"
+                  >
+                    {savingStepName ? '...' : 'OK'}
+                  </button>
+                  <button
+                    onClick={() => setEditingStepId(null)}
+                    className="px-2.5 py-1.5 bg-gray-800 text-gray-400 text-xs rounded-lg transition"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => { setEditingStepId(step.stepId); setEditingStepName(step.stepName) }}
+                  className="flex items-center gap-1 text-xs text-gray-600 hover:text-orange-400 transition mb-1 ml-1"
+                  title="Editar nombre del paso"
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                      d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                  </svg>
+                  Renombrar
+                </button>
+              )}
+              <StepCard step={step} projectId={project.projectId} workers={workers} />
+            </div>
           ))}
         </div>
       )}
