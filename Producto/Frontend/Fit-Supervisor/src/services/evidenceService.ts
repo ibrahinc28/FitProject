@@ -6,6 +6,11 @@ export const getEvidenceByStep = async (stepId: string): Promise<Evidence[]> => 
   return data
 }
 
+export const getEvidenceByWorker = async (workerId: string): Promise<Evidence[]> => {
+  const { data } = await api.get<Evidence[]>(`/evidence/worker/${workerId}`)
+  return data
+}
+
 export const getPendingEvidences = async (): Promise<Evidence[]> => {
   const { data } = await api.get<Evidence[]>('/evidence/pending')
   return data

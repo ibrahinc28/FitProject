@@ -11,7 +11,11 @@ const AuthCallbackPage: React.FC = () => {
   useEffect(() => {
     const token = params.get('token')
     const userRaw = params.get('user')
-    if (token && userRaw) {
+    if (!token || !userRaw) {
+      navigate('/unauthorized')
+      return
+    }
+    try {
       const user = JSON.parse(userRaw) as AuthUser
       if (user.role !== 'SUPERVISOR_OBRA' && user.role !== 'TRABAJADOR') {
         navigate('/unauthorized')
@@ -19,7 +23,7 @@ const AuthCallbackPage: React.FC = () => {
       }
       setUserAndToken(user, token)
       navigate(user.role === 'TRABAJADOR' ? '/worker' : '/')
-    } else {
+    } catch {
       navigate('/unauthorized')
     }
   }, [])

@@ -30,6 +30,12 @@ public class EvidenceController {
         return ResponseEntity.ok(evidenceService.getPending());
     }
 
+    @GetMapping("/worker/{workerId}")
+    public ResponseEntity<List<EvidenceDTO>> getByWorker(@PathVariable String workerId) {
+        log.info("GET /api/v1/evidences/worker/{}", workerId);
+        return ResponseEntity.ok(evidenceService.getByWorker(workerId));
+    }
+
     @PostMapping("/submit")
     public ResponseEntity<EvidenceDTO> submit(@RequestBody EvidenceDTO req) {
         log.info("POST /api/v1/evidences/submit stepId={}", req.getStepId());

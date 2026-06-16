@@ -30,6 +30,9 @@ public interface GestionClient {
     @GetMapping("/evidences/pending")
     List<EvidenceDTO> getPendingEvidences();
 
+    @GetMapping("/evidences/worker/{workerId}")
+    List<EvidenceDTO> getEvidenceByWorker(@PathVariable("workerId") String workerId);
+
     @PostMapping("/evidences/submit")
     EvidenceDTO submitEvidence(@RequestBody EvidenceDTO request);
 

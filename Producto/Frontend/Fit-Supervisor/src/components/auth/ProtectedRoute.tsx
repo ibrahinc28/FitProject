@@ -4,19 +4,15 @@ import { useAuth } from '../../context/AuthContext'
 import LoginPage from './LoginPage'
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAuthenticated, user } = useAuth()
+  const { isAuthenticated, user, loading } = useAuth()
 
-  if (!isAuthenticated) {
-    return <LoginPage />
-  }
+  if (loading) return null
 
-  if (user?.role === 'TRABAJADOR') {
-    return <Navigate to="/worker" replace />
-  }
+  if (!isAuthenticated) return <LoginPage />
 
-  if (user?.role !== 'SUPERVISOR_OBRA') {
-    return <Navigate to="/unauthorized" replace />
-  }
+  if (user?.role === 'TRABAJADOR') return <Navigate to="/worker" replace />
+
+  if (user?.role !== 'SUPERVISOR_OBRA') return <Navigate to="/unauthorized" replace />
 
   return <>{children}</>
 }

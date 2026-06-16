@@ -2,6 +2,8 @@ server:
   port: ${SERVER_PORT:8081}
   servlet:
     context-path: /
+  error:
+    include-message: always
 
 spring:
   application:
@@ -39,6 +41,7 @@ logging:
     com.fitproject.bff: INFO
     com.fitproject.bff.client: DEBUG
     org.springframework.cloud.openfeign: DEBUG
+    org.springframework.security: DEBUG
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
     file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

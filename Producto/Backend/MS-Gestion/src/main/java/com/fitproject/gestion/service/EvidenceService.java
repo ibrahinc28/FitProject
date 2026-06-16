@@ -30,6 +30,12 @@ public class EvidenceService {
                 .map(this::toDTO).collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
+    public List<EvidenceDTO> getByWorker(String workerId) {
+        return evidenceRepository.findByAssignedWorkerId(workerId).stream()
+                .map(this::toDTO).collect(Collectors.toList());
+    }
+
     @Transactional
     public EvidenceDTO submit(EvidenceDTO req) {
         ConstructionStep step = stepRepository.findById(req.getStepId())

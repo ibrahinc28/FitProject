@@ -4,7 +4,9 @@ import { useAuth } from '../../context/AuthContext'
 import LoginPage from './LoginPage'
 
 const WorkerProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAuthenticated, user } = useAuth()
+  const { isAuthenticated, user, loading } = useAuth()
+
+  if (loading) return null
 
   if (!isAuthenticated) return <LoginPage />
 

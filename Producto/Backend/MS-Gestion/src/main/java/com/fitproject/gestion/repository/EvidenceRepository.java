@@ -11,4 +11,5 @@ import java.util.List;
 public interface EvidenceRepository extends JpaRepository<Evidence, String> {
     List<Evidence> findByStep_StepId(String stepId);
     List<Evidence> findByStatus(EvidenceStatus status);
+    List<Evidence> findByAssignedWorkerId(String assignedWorkerId);
 }

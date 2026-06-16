@@ -17,6 +17,10 @@ const LoginPage: React.FC = () => {
     setError('')
     try {
       const res = await login(email, password)
+      if (res.role !== 'SUPERVISOR_OBRA' && res.role !== 'TRABAJADOR') {
+        setError('Esta aplicación es solo para supervisores y trabajadores.')
+        return
+      }
       const user = {
         userId:   res.userId,
         email:    res.email,
@@ -27,8 +31,6 @@ const LoginPage: React.FC = () => {
       setUserAndToken(user, res.token)
       if (res.role === 'TRABAJADOR') {
         navigate('/worker')
-      } else if (res.role !== 'SUPERVISOR_OBRA') {
-        setError('Esta aplicación es solo para supervisores y trabajadores.')
       }
     } catch {
       setError('Credenciales inválidas. Verifica tu correo y contraseña.')

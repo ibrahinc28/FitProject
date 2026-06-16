@@ -34,6 +34,12 @@ public class SupervisorEvidenceController {
         return ResponseEntity.ok(gestionClient.getPendingEvidences());
     }
 
+    @GetMapping("/worker/{workerId}")
+    public ResponseEntity<List<EvidenceDTO>> getByWorker(@PathVariable String workerId) {
+        log.info("GET /api/v1/evidence/worker/{}", workerId);
+        return ResponseEntity.ok(gestionClient.getEvidenceByWorker(workerId));
+    }
+
     @PostMapping
     public ResponseEntity<EvidenceDTO> submit(@RequestBody EvidenceDTO request) {
         log.info("POST /api/v1/evidence stepId={}", request.getStepId());
