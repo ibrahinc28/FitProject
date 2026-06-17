@@ -1,10 +1,18 @@
 'use client'
-import { useState, type FormEvent } from 'react'
-import { gymModels } from '../data/models'
+import { useState, useEffect, type FormEvent } from 'react'
+import type { GymModel } from '../data/models'
 
 export default function ContactSection() {
   const [form, setForm] = useState({ name: '', email: '', phone: '', model: '', message: '' })
   const [submitted, setSubmitted] = useState(false)
+  const [models, setModels] = useState<GymModel[]>([])
+
+  useEffect(() => {
+    fetch('/api/v1/models')
+      .then(r => r.ok ? r.json() : [])
+      .then(setModels)
+      .catch(() => setModels([]))
+  }, [])
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
@@ -71,7 +79,7 @@ export default function ContactSection() {
                   name="phone"
                   value={form.phone}
                   onChange={handleChange}
-                  placeholder="+54 9 11 0000-0000"
+                  placeholder="+56 9 1234 5678"
                   className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-green-500"
                 />
               </div>
@@ -84,7 +92,7 @@ export default function ContactSection() {
                   className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-green-500"
                 >
                   <option value="">Seleccionar modelo…</option>
-                  {gymModels.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                  {models.map(m => <option key={m.modelId} value={m.modelId}>{m.name}</option>)}
                 </select>
               </div>
             </div>

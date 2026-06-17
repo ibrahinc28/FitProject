@@ -16,6 +16,9 @@ app.get('/health', (_req, res) => res.json({ status: 'ok', service: 'api-gateway
 // Public: auth endpoints
 app.use('/auth', authRouter)
 
+// Public: catalog (no auth — ecommerce is public-facing)
+app.use('/api/v1/models',     ventasProxy)
+
 // Protected: proxy to BFFs
 app.use('/api/v1/mobile',     requireAuth, gestionProxy)   // Admin Panel project/evidence management
 app.use('/api/v1/inventory',  requireAuth, gestionProxy)   // Inventory management (MS-Inventario via BFF)

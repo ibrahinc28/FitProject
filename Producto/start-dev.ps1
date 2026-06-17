@@ -33,6 +33,9 @@ Start-Sleep 3
 Open-Service "MS-Inventario :8094" "$root\Backend\MS-Inventario" "mvn spring-boot:run"
 Start-Sleep 3
 
+Open-Service "MS-Ventas :8091"    "$root\Backend\MS-Ventas"    "mvn spring-boot:run"
+Start-Sleep 3
+
 # ── 2. BFFs (esperan a que los MS estén listos) ────────────────
 Write-Host ">> Iniciando BFFs..." -ForegroundColor Cyan
 
@@ -40,6 +43,9 @@ Open-Service "BFF-Gestion :8081"  "$root\Backend\BFF-Gestion"   "mvn spring-boot
 Start-Sleep 3
 
 Open-Service "BFF-Usuarios :8082" "$root\Backend\BFF-Usuarios"  "mvn spring-boot:run"
+Start-Sleep 3
+
+Open-Service "BFF-Ventas :8083"   "$root\Backend\BFF-Ventas"    "mvn spring-boot:run"
 Start-Sleep 3
 
 # ── 3. Api-Gateway ─────────────────────────────────────────────
@@ -53,6 +59,7 @@ Open-Service "Fit-Admin-Panel :3000"      "$root\Frontend\Fit-Admin-Panel"      
 Open-Service "Fit-Supervisor :3003"       "$root\Frontend\Fit-Supervisor"       "npm install --silent; npm run dev"
 Open-Service "Fit-Dashboard :3001"        "$root\Frontend\Fit-Dashboard"        "npm install --silent; npm run dev"
 Open-Service "Fit-Sucursal-Virtual :3004" "$root\Frontend\Fit-Sucursal-Virtual" "npm install --silent; npm run dev"
+Open-Service "Fit-Ecommerce :3002"        "$root\Frontend\Fit-Ecommerce"        "npm install --silent; npm run dev"
 
 # ── Resumen ────────────────────────────────────────────────────
 Write-Host ""
@@ -66,6 +73,8 @@ Write-Host "  Supervisor   ->  http://localhost:3003" -ForegroundColor White
 Write-Host "  Api-Gateway  ->  http://localhost:4000/health" -ForegroundColor White
 Write-Host "  MS-Gestion   ->  http://localhost:8080/api/v1/projects" -ForegroundColor White
 Write-Host "  MS-Inventario->  http://localhost:8094/api/v1/insumos" -ForegroundColor White
+Write-Host "  MS-Ventas    ->  http://localhost:8091/api/v1/models" -ForegroundColor White
+Write-Host "  Ecommerce    ->  http://localhost:3002" -ForegroundColor White
 Write-Host ""
 Write-Host "Presiona cualquier tecla para cerrar esta ventana..."
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
