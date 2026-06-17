@@ -1,0 +1,180 @@
+services:
+
+  # ── API Gateway ────────────────────────────────────────────────────────────
+  api-gateway:
+    build:
+      context: ./Backend/Api-Gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    restart: unless-stopped
+    environment:
+      - PORT=4000
+      - JWT_SECRET=${JWT_SECRET:-fitproject-secret-key-must-be-at-least-32-chars-long}
+      - BFF_GESTION_URL=http://bff-gestion:8081
+      - BFF_USUARIOS_URL=http://bff-usuarios:8082
+      - BFF_VENTAS_URL=http://bff-ventas:8083
+    ports:
+      - "4000:4000"
+    networks:
+      - fit-network
+    depends_on:
+      - bff-gestion
+      - bff-usuarios
+      - bff-ventas
+
+  # ── BFFs ──────────────────────────────────────────────────────────────────
+  bff-gestion:
+    build:
+      context: ./Backend/BFF-Gestion
+      dockerfile: Dockerfile
+    container_name: bff-gestion
+    restart: unless-stopped
+    environment:
+      - SERVER_PORT=8081
+      - MS_GESTION_URL=http://ms-gestion:8080/api/v1
+      - MS_INVENTARIO_URL=http://ms-inventario:8094/api/v1
+      - JWT_SECRET=${JWT_SECRET:-fitproject-secret-key-must-be-at-least-32-chars-long}
+    networks:
+      - fit-network
+    depends_on:
+      - ms-gestion
+      - ms-inventario
+
+  bff-usuarios:
+    build:
+      context: ./Backend/BFF-Usuarios
+      dockerfile: Dockerfile
+    container_name: bff-usuarios
+    restart: unless-stopped
+    environment:
+      - SERVER_PORT=8082
+      - MS_USERS_URL=http://ms-users:8090/api/v1
+      - JWT_SECRET=${JWT_SECRET:-fitproject-secret-key-must-be-at-least-32-chars-long}
+    networks:
+      - fit-network
+    depends_on:
+      - ms-users
+
+  bff-ventas:
+    build:
+      context: ./Backend/BFF-Ventas
+      dockerfile: Dockerfile
+    container_name: bff-ventas
+    restart: unless-stopped
+    environment:
+      - SERVER_PORT=8083
+      - MS_VENTAS_URL=http://ms-ventas:8091
+    networks:
+      - fit-network
+    depends_on:
+      - ms-ventas
+
+  # ── Microservicios ────────────────────────────────────────────────────────
+  ms-gestion:
+    build:
+      context: ./Backend/MS-Gestion
+      dockerfile: Dockerfile
+    container_name: ms-gestion
+    restart: unless-stopped
+    environment:
+      - SERVER_PORT=8080
+      - JAVA_OPTS=-Xmx384m -Xms128m
+    networks:
+      - fit-network
+
+  ms-users:
+    build:
+      context: ./Backend/MS-Users
+      dockerfile: Dockerfile
+    container_name: ms-users
+    restart: unless-stopped
+    environment:
+      - SERVER_PORT=8090
+      - JAVA_OPTS=-Xmx384m -Xms128m
+      - JWT_SECRET=${JWT_SECRET:-fitproject-secret-key-must-be-at-least-32-chars-long}
+    networks:
+      - fit-network
+
+  ms-ventas:
+    build:
+      context: ./Backend/MS-Ventas
+      dockerfile: Dockerfile
+    container_name: ms-ventas
+    restart: unless-stopped
+    environment:
+      - SERVER_PORT=8091
+      - JAVA_OPTS=-Xmx256m -Xms128m
+    networks:
+      - fit-network
+
+  ms-inventario:
+    build:
+      context: ./Backend/MS-Inventario
+      dockerfile: Dockerfile
+    container_name: ms-inventario
+    restart: unless-stopped
+    environment:
+      - SERVER_PORT=8094
+    networks:
+      - fit-network
+
+  # ── Frontends ─────────────────────────────────────────────────────────────
+  fit-admin-panel:
+    build:
+      context: ./Frontend/Fit-Admin-Panel
+      dockerfile: Dockerfile
+    container_name: fit-admin-panel
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    networks:
+      - fit-network
+    depends_on:
+      - api-gateway
+
+  fit-supervisor:
+    build:
+      context: ./Frontend/Fit-Supervisor
+      dockerfile: Dockerfile
+    container_name: fit-supervisor
+    restart: unless-stopped
+    ports:
+      - "3003:80"
+    networks:
+      - fit-network
+    depends_on:
+      - api-gateway
+
+  fit-ecommerce:
+    build:
+      context: ./Frontend/Fit-Ecommerce
+      dockerfile: Dockerfile
+      args:
+        - INTERNAL_API_URL=http://api-gateway:4000
+    container_name: fit-ecommerce
+    restart: unless-stopped
+    environment:
+      - INTERNAL_API_URL=http://api-gateway:4000
+    ports:
+      - "3002:3002"
+    networks:
+      - fit-network
+    depends_on:
+      - api-gateway
+
+  fit-dashboard:
+    build:
+      context: ./Frontend/Fit-Dashboard
+      dockerfile: Dockerfile
+    container_name: fit-dashboard
+    restart: unless-stopped
+    ports:
+      - "3001:80"
+    networks:
+      - fit-network
+    depends_on:
+      - api-gateway
+
+networks:
+  fit-network:
+    driver: bridge

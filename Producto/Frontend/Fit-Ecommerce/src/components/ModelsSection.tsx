@@ -2,8 +2,9 @@ import type { GymModel } from '../data/models'
 import ModelCard from './ModelCard'
 
 async function fetchModels(): Promise<GymModel[]> {
+  const gateway = process.env.INTERNAL_API_URL ?? 'http://localhost:4000'
   try {
-    const res = await fetch('http://localhost:4000/api/v1/models', {
+    const res = await fetch(`${gateway}/api/v1/models`, {
       cache: 'no-store',
     })
     if (!res.ok) return []
