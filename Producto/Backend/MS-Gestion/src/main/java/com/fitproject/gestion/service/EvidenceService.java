@@ -4,6 +4,7 @@ import com.fitproject.gestion.dto.EvidenceDTO;
 import com.fitproject.gestion.model.*;
 import com.fitproject.gestion.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +18,7 @@ public class EvidenceService {
     private final EvidenceRepository evidenceRepository;
     private final StepRepository stepRepository;
     private final ProjectRepository projectRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional(readOnly = true)
     public List<EvidenceDTO> getByStep(String stepId) {
@@ -59,20 +61,15 @@ public class EvidenceService {
                 .build();
 
         Evidence saved = evidenceRepository.save(evidence);
-
-        // Recalculate progress only when real evidence is submitted (not just a task assignment)
-        if (!isTaskAssignment) {
-            recalculateStepProgress(step, project);
-        }
-
+        recalculateStepProgress(step, project);
         return toDTO(saved);
     }
 
     /**
-     * Called when an assigned worker uploads their evidence for a task.
-     * Changes status from ASSIGNED → PENDING (awaiting supervisor approval).
-     * This is where a notification to the supervisor should be triggered
-     * once a notification system is in place.
+     * Called exclusively when the assigned WORKER uploads their evidence photo.
+     * This is the ONLY method that publishes WorkerEvidenceSubmittedEvent.
+     * submit() does NOT publish any event, so supervisor task assignments are silent.
+     * The BFF enforces role=TRABAJADOR before this method is reached.
      */
     @Transactional
     public EvidenceDTO workerSubmit(String evidenceId, String evidenceUrl, String description) {
@@ -87,8 +84,19 @@ public class EvidenceService {
         if (description != null && !description.isBlank()) {
             evidence.setDescription(description);
         }
-        // Status stays PENDING — supervisor still needs to approve
         evidenceRepository.save(evidence);
+
+        // Event is picked up by EvidenceNotificationListener with @TransactionalEventListener(AFTER_COMMIT)
+        // so the notification only fires if this transaction commits successfully.
+        eventPublisher.publishEvent(new WorkerEvidenceSubmittedEvent(
+                this,
+                evidence.getEvidenceId(),
+                evidence.getName(),
+                evidence.getAssignedWorkerName(),
+                evidence.getProject().getProjectId(),
+                evidence.getStep().getStepId()
+        ));
+
         return toDTO(evidence);
     }
 

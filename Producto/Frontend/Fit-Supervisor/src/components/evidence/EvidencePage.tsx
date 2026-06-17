@@ -45,7 +45,8 @@ const EvidencePage: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const workerFileRef = useRef<HTMLInputElement>(null)
 
-  const isSupervisor = user?.role === 'SUPERVISOR_OBRA' || user?.role === 'ADMIN'
+  // Treat unknown/loading role as supervisor to fail-safe: never show worker-only buttons
+  const isSupervisor = !user || user.role === 'SUPERVISOR_OBRA' || user.role === 'ADMIN'
 
   const [evidences, setEvidences] = useState<Evidence[]>([])
   const [workers, setWorkers] = useState<Worker[]>([])
@@ -185,6 +186,7 @@ const EvidencePage: React.FC = () => {
   }
 
   const handleWorkerComplete = async (evidenceId: string) => {
+    if (isSupervisor) return  // defense-in-depth: supervisors never submit worker evidence
     if (!workerFile) { setError('Debes seleccionar una imagen'); return }
     setCompleting(true)
     setError('')
@@ -517,7 +519,7 @@ const EvidencePage: React.FC = () => {
               </div>
 
               {/* Inline worker completion form */}
-              {completingId === ev.evidenceId && (
+              {completingId === ev.evidenceId && !isSupervisor && (
                 <div className="border-t border-blue-800/40 p-4 space-y-3 bg-blue-900/10">
                   <p className="text-xs text-blue-300 font-semibold">Completar tarea — sube tu evidencia</p>
                   {!workerPreview ? (
@@ -615,37 +617,51 @@ const EvidencePage: React.FC = () => {
 
             {/* Read-only fields */}
             <div className="p-5 space-y-4">
+
+              {/* Worker banner — shown when a worker completed this task */}
+              {viewingEvidence.assignedWorkerName && viewingEvidence.evidenceUrl && (
+                <div className="flex items-center gap-3 p-3 bg-blue-900/20 border border-blue-800/40 rounded-lg">
+                  <div className="w-8 h-8 rounded-full bg-blue-800/50 flex items-center justify-center shrink-0">
+                    <svg className="w-4 h-4 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-xs text-blue-400">Evidencia subida por trabajador</p>
+                    <p className="text-sm text-blue-200 font-semibold">{viewingEvidence.assignedWorkerName}</p>
+                  </div>
+                </div>
+              )}
+
               <div>
-                <p className="text-xs text-gray-500 mb-1">Nombre</p>
+                <p className="text-xs text-gray-500 mb-1">Nombre de la tarea</p>
                 <p className="text-sm text-gray-300 bg-[#1a1a1a] px-3 py-2 rounded-lg border border-gray-800">
                   {viewingEvidence.name}
                 </p>
               </div>
+
               {viewingEvidence.description && (
                 <div>
-                  <p className="text-xs text-gray-500 mb-1">Descripción / Notas del trabajador</p>
-                  <p className="text-sm text-gray-300 bg-[#1a1a1a] px-3 py-2 rounded-lg border border-gray-800 whitespace-pre-wrap">
+                  <p className="text-xs text-gray-500 mb-1">
+                    {viewingEvidence.assignedWorkerName ? 'Descripción del trabajador' : 'Descripción'}
+                  </p>
+                  <p className="text-sm text-gray-300 bg-[#1a1a1a] px-3 py-2 rounded-lg border border-gray-800 whitespace-pre-wrap leading-relaxed">
                     {viewingEvidence.description}
                   </p>
                 </div>
               )}
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <p className="text-xs text-gray-500 mb-1">Enviado por</p>
+                  <p className="text-xs text-gray-500 mb-1">Asignado por</p>
                   <p className="text-xs text-gray-400 bg-[#1a1a1a] px-3 py-2 rounded-lg border border-gray-800">
                     {viewingEvidence.submittedBy}
                   </p>
                 </div>
-                {viewingEvidence.assignedWorkerName && (
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1">Trabajador asignado</p>
-                    <p className="text-xs text-gray-400 bg-[#1a1a1a] px-3 py-2 rounded-lg border border-gray-800">
-                      {viewingEvidence.assignedWorkerName}
-                    </p>
-                  </div>
-                )}
+
                 <div>
-                  <p className="text-xs text-gray-500 mb-1">Fecha</p>
+                  <p className="text-xs text-gray-500 mb-1">Fecha de asignación</p>
                   <p className="text-xs text-gray-400 bg-[#1a1a1a] px-3 py-2 rounded-lg border border-gray-800">
                     {viewingEvidence.createdAt
                       ? new Date(viewingEvidence.createdAt).toLocaleDateString('es-CL', {
@@ -655,7 +671,21 @@ const EvidencePage: React.FC = () => {
                       : '—'}
                   </p>
                 </div>
+
+                {/* Show delivery date only when worker has submitted */}
+                {viewingEvidence.assignedWorkerName && viewingEvidence.evidenceUrl && viewingEvidence.updatedAt && (
+                  <div className="col-span-2">
+                    <p className="text-xs text-blue-400 mb-1">Fecha de entrega del trabajador</p>
+                    <p className="text-xs text-blue-300 bg-blue-900/20 px-3 py-2 rounded-lg border border-blue-800/40">
+                      {new Date(viewingEvidence.updatedAt).toLocaleDateString('es-CL', {
+                        day: '2-digit', month: 'short', year: 'numeric',
+                        hour: '2-digit', minute: '2-digit',
+                      })}
+                    </p>
+                  </div>
+                )}
               </div>
+
               <p className="text-xs text-gray-600 text-center pt-1">
                 Vista de solo lectura — el contenido subido por el trabajador no puede modificarse.
               </p>

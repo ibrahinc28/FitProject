@@ -36,7 +36,7 @@ public class SecurityConfig {
                 .requestMatchers("/swagger-ui/**", "/api-docs/**", "/swagger-ui.html").permitAll()
                 // Worker-specific endpoints (must be before the general evidence rule)
                 .requestMatchers("/api/v1/evidence/worker/**").hasAnyRole("ADMIN", "SUPERVISOR_OBRA", "TRABAJADOR")
-                .requestMatchers("/api/v1/evidence/*/worker-submit").hasAnyRole("ADMIN", "SUPERVISOR_OBRA", "TRABAJADOR")
+                .requestMatchers("/api/v1/evidence/*/worker-submit").hasRole("TRABAJADOR")
                 .requestMatchers("/api/v1/projects").hasAnyRole("ADMIN", "SUPERVISOR_OBRA", "TRABAJADOR")
                 // General role rules
                 .requestMatchers("/api/v1/mobile/**").hasAnyRole("ADMIN", "SUPERVISOR_OBRA")

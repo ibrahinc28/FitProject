@@ -22,7 +22,9 @@ const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   useEffect(() => {
     const fetchCount = () => {
       getPendingEvidences()
-        .then(ev => setPendingCount(ev.length))
+        // Only count evidences where the worker already uploaded a photo.
+        // Task assignments (assignedWorkerId set but evidenceUrl empty) are NOT ready for review.
+        .then(ev => setPendingCount(ev.filter(e => !!e.evidenceUrl && e.evidenceUrl.trim() !== '').length))
         .catch(() => { /* silent – backend may be offline */ })
     }
     fetchCount()

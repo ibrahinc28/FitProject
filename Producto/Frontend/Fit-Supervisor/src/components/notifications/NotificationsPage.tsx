@@ -107,7 +107,9 @@ const NotificationsPage: React.FC = () => {
   const load = useCallback(() => {
     setLoading(true)
     getPendingEvidences()
-      .then(setEvidences)
+      // Only show evidences where the worker already uploaded a photo (evidenceUrl is set).
+      // Task assignments awaiting worker upload are excluded — they are not ready for supervisor review.
+      .then(list => setEvidences(list.filter(e => !!e.evidenceUrl && e.evidenceUrl.trim() !== '')))
       .catch(() => setError('No se pudieron cargar las notificaciones'))
       .finally(() => setLoading(false))
   }, [])
@@ -161,7 +163,7 @@ const NotificationsPage: React.FC = () => {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-white">Notificaciones</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Evidencias pendientes de tu aprobación</p>
+          <p className="text-sm text-gray-500 mt-0.5">Evidencias enviadas por trabajadores, pendientes de tu aprobación</p>
         </div>
         <button
           onClick={load}
