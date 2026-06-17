@@ -14,6 +14,7 @@ public class GymModel {
     private String modelId;
     @Column(nullable = false, unique = true)
     private String name;
+    @Column(columnDefinition = "TEXT")
     private String description;
     @Column(precision = 12, scale = 2)
     private BigDecimal price;
