@@ -4,7 +4,6 @@ import com.fitproject.bff.client.GestionClient;
 import com.fitproject.bff.dto.ProjectDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -33,17 +32,6 @@ public class SupervisorProjectController {
         } catch (Exception e) {
             return ResponseEntity.notFound().build();
         }
-    }
-
-    @PostMapping
-    public ResponseEntity<ProjectDTO> createProject(@RequestBody Map<String, Object> body) {
-        String modelName = (String) body.get("modelName");
-        String description = (String) body.get("description");
-        String imageUrl = (String) body.get("imageUrl");
-        Double budget = body.get("budget") != null ? Double.parseDouble(body.get("budget").toString()) : null;
-        log.info("POST /api/v1/projects modelName={}", modelName);
-        GestionClient.CreateProjectRequest req = new GestionClient.CreateProjectRequest(modelName, description, imageUrl, budget);
-        return ResponseEntity.status(HttpStatus.CREATED).body(gestionClient.createProject(req));
     }
 
     @PatchMapping("/{projectId}")

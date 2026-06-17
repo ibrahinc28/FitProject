@@ -30,6 +30,9 @@ Start-Sleep 3
 Open-Service "MS-Gestion :8080"  "$root\Backend\MS-Gestion"  "mvn spring-boot:run"
 Start-Sleep 3
 
+Open-Service "MS-Inventario :8094" "$root\Backend\MS-Inventario" "mvn spring-boot:run"
+Start-Sleep 3
+
 # ── 2. BFFs (esperan a que los MS estén listos) ────────────────
 Write-Host ">> Iniciando BFFs..." -ForegroundColor Cyan
 
@@ -62,6 +65,7 @@ Write-Host "  Admin Panel  ->  http://localhost:3000" -ForegroundColor White
 Write-Host "  Supervisor   ->  http://localhost:3003" -ForegroundColor White
 Write-Host "  Api-Gateway  ->  http://localhost:4000/health" -ForegroundColor White
 Write-Host "  MS-Gestion   ->  http://localhost:8080/api/v1/projects" -ForegroundColor White
+Write-Host "  MS-Inventario->  http://localhost:8094/api/v1/insumos" -ForegroundColor White
 Write-Host ""
 Write-Host "Presiona cualquier tecla para cerrar esta ventana..."
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")

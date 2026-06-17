@@ -4,6 +4,7 @@ import com.fitproject.bff.security.JwtAuthFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -38,6 +39,13 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/evidence/worker/**").hasAnyRole("ADMIN", "SUPERVISOR_OBRA", "TRABAJADOR")
                 .requestMatchers("/api/v1/evidence/*/worker-submit").hasRole("TRABAJADOR")
                 .requestMatchers("/api/v1/projects").hasAnyRole("ADMIN", "SUPERVISOR_OBRA", "TRABAJADOR")
+                // Admin-only: project creation goes through the mobile controller
+                .requestMatchers(HttpMethod.POST, "/api/v1/mobile/projects").hasRole("ADMIN")
+                // Inventory: workers can read (to select insumos); admin can create/update
+                .requestMatchers(HttpMethod.GET, "/api/v1/inventory/insumos").hasAnyRole("ADMIN", "SUPERVISOR_OBRA", "TRABAJADOR")
+                .requestMatchers(HttpMethod.POST, "/api/v1/inventory/insumos").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PATCH, "/api/v1/inventory/**").hasRole("ADMIN")
+                .requestMatchers("/api/v1/inventory/**").hasAnyRole("ADMIN", "SUPERVISOR_OBRA")
                 // General role rules
                 .requestMatchers("/api/v1/mobile/**").hasAnyRole("ADMIN", "SUPERVISOR_OBRA")
                 .requestMatchers("/api/v1/projects/**").hasAnyRole("ADMIN", "SUPERVISOR_OBRA")

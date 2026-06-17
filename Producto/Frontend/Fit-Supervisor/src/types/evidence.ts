@@ -1,5 +1,12 @@
 export type EvidenceStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
 
+export interface InsumoUsado {
+  insumoId: string
+  nombre: string
+  cantidad: number
+  unidadMedida: string
+}
+
 export interface Evidence {
   evidenceId: string
   projectId: string
@@ -13,6 +20,7 @@ export interface Evidence {
   status: EvidenceStatus
   createdAt: string
   updatedAt: string
+  insumosUsados?: InsumoUsado[]
 }
 
 export interface SubmitEvidenceRequest {

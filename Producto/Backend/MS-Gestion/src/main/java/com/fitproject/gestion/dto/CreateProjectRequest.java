@@ -8,4 +8,6 @@ public class CreateProjectRequest {
     private String description;
     private String imageUrl;
     private Double budget;
+    private String supervisorId;
+    private String supervisorName;
 }

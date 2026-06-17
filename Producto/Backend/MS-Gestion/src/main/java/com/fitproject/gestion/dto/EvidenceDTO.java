@@ -2,6 +2,7 @@ package com.fitproject.gestion.dto;
 
 import lombok.*;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data @NoArgsConstructor @AllArgsConstructor @Builder
 public class EvidenceDTO {
@@ -18,4 +19,5 @@ public class EvidenceDTO {
     private String status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private List<InsumoUsadoDTO> insumosUsados;
 }

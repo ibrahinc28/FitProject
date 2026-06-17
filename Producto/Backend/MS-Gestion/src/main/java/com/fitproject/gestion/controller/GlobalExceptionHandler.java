@@ -19,6 +19,13 @@ public class GlobalExceptionHandler {
                 .body(Map.of("error", ex.getMessage()));
     }
 
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<Map<String, String>> handleConflict(IllegalStateException ex) {
+        log.warn("Conflict: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Map.of("error", ex.getMessage(), "code", "STOCK_INSUFICIENTE"));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleGeneral(Exception ex) {
         log.error("Unhandled exception [{}]: {}", ex.getClass().getSimpleName(), ex.getMessage(), ex);

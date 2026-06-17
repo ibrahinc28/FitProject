@@ -1,14 +1,20 @@
 package com.fitproject.gestion.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fitproject.gestion.client.InventarioClient;
 import com.fitproject.gestion.dto.EvidenceDTO;
+import com.fitproject.gestion.dto.InsumoUsadoDTO;
 import com.fitproject.gestion.model.*;
 import com.fitproject.gestion.repository.*;
+import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -19,6 +25,8 @@ public class EvidenceService {
     private final StepRepository stepRepository;
     private final ProjectRepository projectRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final InventarioClient inventarioClient;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Transactional(readOnly = true)
     public List<EvidenceDTO> getByStep(String stepId) {
@@ -72,7 +80,8 @@ public class EvidenceService {
      * The BFF enforces role=TRABAJADOR before this method is reached.
      */
     @Transactional
-    public EvidenceDTO workerSubmit(String evidenceId, String evidenceUrl, String description) {
+    public EvidenceDTO workerSubmit(String evidenceId, String evidenceUrl, String description,
+                                    List<InsumoUsadoDTO> insumosUsados) {
         Evidence evidence = findById(evidenceId);
         if (evidence.getAssignedWorkerId() == null || evidence.getAssignedWorkerId().isBlank()) {
             throw new IllegalArgumentException("Esta evidencia no tiene un trabajador asignado");
@@ -80,14 +89,42 @@ public class EvidenceService {
         if (evidence.getEvidenceUrl() != null && !evidence.getEvidenceUrl().isBlank()) {
             throw new IllegalArgumentException("El trabajador ya subió la evidencia para esta tarea");
         }
+
+        // Deduct stock in MS-Inventario before saving. If any insumo has insufficient stock,
+        // MS-Inventario returns 409 and Feign throws FeignException — we catch and re-throw
+        // as IllegalStateException so GlobalExceptionHandler maps it to 409 to the frontend.
+        if (insumosUsados != null && !insumosUsados.isEmpty()) {
+            for (InsumoUsadoDTO insumo : insumosUsados) {
+                try {
+                    inventarioClient.consumir(insumo.getInsumoId(), Map.of(
+                        "cantidad",    insumo.getCantidad(),
+                        "referencia",  evidenceId,
+                        "realizadoPor", evidence.getAssignedWorkerId()
+                    ));
+                } catch (FeignException.Conflict ex) {
+                    // 409 from MS-Inventario → stock insuficiente
+                    throw new IllegalStateException(
+                        "Stock insuficiente para el insumo '" + insumo.getNombre() + "'. " +
+                        "Verifica las cantidades e inténtalo de nuevo.");
+                } catch (FeignException ex) {
+                    throw new IllegalStateException(
+                        "Error al descontar inventario para '" + insumo.getNombre() + "': " + ex.getMessage());
+                }
+            }
+        }
+
         evidence.setEvidenceUrl(evidenceUrl != null ? evidenceUrl : "");
         if (description != null && !description.isBlank()) {
             evidence.setDescription(description);
         }
+        if (insumosUsados != null && !insumosUsados.isEmpty()) {
+            try {
+                evidence.setInsumosUsados(objectMapper.writeValueAsString(insumosUsados));
+            } catch (JsonProcessingException ignored) { /* non-fatal */ }
+        }
         evidenceRepository.save(evidence);
 
         // Event is picked up by EvidenceNotificationListener with @TransactionalEventListener(AFTER_COMMIT)
-        // so the notification only fires if this transaction commits successfully.
         eventPublisher.publishEvent(new WorkerEvidenceSubmittedEvent(
                 this,
                 evidence.getEvidenceId(),
@@ -155,6 +192,13 @@ public class EvidenceService {
     }
 
     public EvidenceDTO toDTO(Evidence e) {
+        List<InsumoUsadoDTO> insumosList = null;
+        if (e.getInsumosUsados() != null && !e.getInsumosUsados().isBlank()) {
+            try {
+                insumosList = objectMapper.readValue(e.getInsumosUsados(),
+                        objectMapper.getTypeFactory().constructCollectionType(List.class, InsumoUsadoDTO.class));
+            } catch (JsonProcessingException ignored) { /* return null list on malformed JSON */ }
+        }
         return EvidenceDTO.builder()
                 .evidenceId(e.getEvidenceId())
                 .projectId(e.getProject() != null ? e.getProject().getProjectId() : null)
@@ -169,6 +213,7 @@ public class EvidenceService {
                 .status(e.getStatus().name())
                 .createdAt(e.getCreatedAt())
                 .updatedAt(e.getUpdatedAt())
+                .insumosUsados(insumosList)
                 .build();
     }
 }

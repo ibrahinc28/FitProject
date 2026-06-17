@@ -69,7 +69,9 @@ public class EvidenceController {
     public ResponseEntity<EvidenceDTO> workerSubmit(
             @PathVariable String evidenceId,
             @RequestBody EvidenceDTO req) {
-        log.info("POST /api/v1/evidences/{}/worker-submit", evidenceId);
-        return ResponseEntity.ok(evidenceService.workerSubmit(evidenceId, req.getEvidenceUrl(), req.getDescription()));
+        log.info("POST /api/v1/evidences/{}/worker-submit insumosUsados={}", evidenceId,
+                req.getInsumosUsados() != null ? req.getInsumosUsados().size() : 0);
+        return ResponseEntity.ok(evidenceService.workerSubmit(
+                evidenceId, req.getEvidenceUrl(), req.getDescription(), req.getInsumosUsados()));
     }
 }

@@ -41,6 +41,8 @@ public class ProjectService {
                 .description(req.getDescription())
                 .imageUrl(req.getImageUrl())
                 .budget(req.getBudget())
+                .supervisorId(req.getSupervisorId())
+                .supervisorName(req.getSupervisorName())
                 .overallProgress(0)
                 .build());
 
@@ -64,6 +66,8 @@ public class ProjectService {
         if (req.getDescription() != null) project.setDescription(req.getDescription());
         if (req.getImageUrl() != null) project.setImageUrl(req.getImageUrl());
         if (req.getBudget() != null) project.setBudget(req.getBudget());
+        if (req.getSupervisorId() != null) project.setSupervisorId(req.getSupervisorId());
+        if (req.getSupervisorName() != null) project.setSupervisorName(req.getSupervisorName());
         return toDTO(projectRepository.save(project));
     }
 
@@ -123,6 +127,8 @@ public class ProjectService {
                 .description(project.getDescription())
                 .imageUrl(project.getImageUrl())
                 .budget(project.getBudget())
+                .supervisorId(project.getSupervisorId())
+                .supervisorName(project.getSupervisorName())
                 .overallProgress(project.getOverallProgress())
                 .createdAt(project.getCreatedAt())
                 .updatedAt(project.getUpdatedAt())

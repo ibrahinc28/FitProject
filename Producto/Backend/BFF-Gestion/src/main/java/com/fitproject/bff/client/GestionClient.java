@@ -82,13 +82,17 @@ public interface GestionClient {
         private String description;
         private String imageUrl;
         private Double budget;
+        private String supervisorId;
+        private String supervisorName;
 
         public CreateProjectRequest() {}
-        public CreateProjectRequest(String modelName, String description, String imageUrl, Double budget) {
+        public CreateProjectRequest(String modelName, String description, String imageUrl, Double budget, String supervisorId, String supervisorName) {
             this.modelName = modelName;
             this.description = description;
             this.imageUrl = imageUrl;
             this.budget = budget;
+            this.supervisorId = supervisorId;
+            this.supervisorName = supervisorName;
         }
         public String getModelName() { return modelName; }
         public void setModelName(String m) { this.modelName = m; }
@@ -98,6 +102,10 @@ public interface GestionClient {
         public void setImageUrl(String u) { this.imageUrl = u; }
         public Double getBudget() { return budget; }
         public void setBudget(Double b) { this.budget = b; }
+        public String getSupervisorId() { return supervisorId; }
+        public void setSupervisorId(String s) { this.supervisorId = s; }
+        public String getSupervisorName() { return supervisorName; }
+        public void setSupervisorName(String s) { this.supervisorName = s; }
     }
 
     class UpdateProjectRequest {

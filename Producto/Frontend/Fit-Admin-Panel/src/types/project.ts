@@ -11,8 +11,23 @@ export interface Step {
 
 export interface Project {
   projectId: string;
+  containerId?: string;
   modelName: string;
+  description?: string;
+  imageUrl?: string;
+  budget?: number;
+  supervisorId?: string;
+  supervisorName?: string;
   overallProgress: number;
   constructionSteps: Step[];
   evidences: Evidence[];
+}
+
+export interface CreateProjectData {
+  modelName: string;
+  description?: string;
+  imageUrl?: string;
+  budget?: number;
+  supervisorId?: string;
+  supervisorName?: string;
 }

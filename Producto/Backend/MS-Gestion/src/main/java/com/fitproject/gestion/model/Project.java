@@ -32,6 +32,12 @@ public class Project {
     @Column(name = "budget")
     private Double budget;
 
+    @Column(name = "supervisor_id")
+    private String supervisorId;
+
+    @Column(name = "supervisor_name")
+    private String supervisorName;
+
     @Column(name = "overall_progress", nullable = false)
     @Builder.Default
     private Integer overallProgress = 0;

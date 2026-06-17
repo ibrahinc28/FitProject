@@ -103,15 +103,6 @@ const HomePage: React.FC = () => {
           <h1 className="text-2xl font-bold text-white">Inicio</h1>
           <p className="text-sm text-gray-500 mt-0.5">Resumen de tus proyectos de obra</p>
         </div>
-        <Link
-          to="/projects/new"
-          className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold rounded-lg transition-colors"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Nuevo proyecto
-        </Link>
       </div>
 
       {/* Stats */}
@@ -154,16 +145,7 @@ const HomePage: React.FC = () => {
             </svg>
           </div>
           <p className="text-gray-400 font-medium mb-1">Sin proyectos todavía</p>
-          <p className="text-gray-600 text-sm mb-4">Crea tu primer proyecto para comenzar</p>
-          <Link
-            to="/projects/new"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold rounded-lg transition-colors"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Crear proyecto
-          </Link>
+          <p className="text-gray-600 text-sm">El administrador te asignará proyectos próximamente.</p>
         </div>
       )}
     </div>

@@ -7,6 +7,7 @@ import lombok.Builder;
 
 import jakarta.validation.constraints.NotBlank;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -41,4 +42,7 @@ public class EvidenceDTO {
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
+
+    // Insumos consumed by the worker when submitting this evidence
+    private List<InsumoUsadoDTO> insumosUsados;
 }

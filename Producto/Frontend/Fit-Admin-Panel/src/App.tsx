@@ -5,17 +5,34 @@ import LoginPage from './components/auth/LoginPage'
 import MainLayout from './components/layout/MainLayout'
 import ProjectList from './components/projects/ProjectList'
 import ProjectDetail from './components/projects/ProjectDetail'
+import CreateProjectPage from './components/projects/CreateProjectPage'
 import UserManagement from './components/admin/UserManagement'
+import InventarioPanel from './components/inventario/InventarioPanel'
 import { useState } from 'react'
 import './App.css'
 
 function ProjectsView() {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
+  const [isCreating, setIsCreating] = useState(false)
 
-  return selectedProjectId ? (
-    <ProjectDetail projectId={selectedProjectId} onBack={() => setSelectedProjectId(null)} />
-  ) : (
-    <ProjectList onProjectSelect={setSelectedProjectId} />
+  if (isCreating) {
+    return (
+      <CreateProjectPage
+        onBack={() => setIsCreating(false)}
+        onCreated={(id) => { setIsCreating(false); setSelectedProjectId(id) }}
+      />
+    )
+  }
+
+  if (selectedProjectId) {
+    return <ProjectDetail projectId={selectedProjectId} onBack={() => setSelectedProjectId(null)} />
+  }
+
+  return (
+    <ProjectList
+      onProjectSelect={setSelectedProjectId}
+      onCreateProject={() => setIsCreating(true)}
+    />
   )
 }
 
@@ -38,6 +55,13 @@ function App() {
           <Route path="/admin/users" element={
             <ProtectedRoute allowedRoles={['ADMIN']}>
               <MainLayout><UserManagement /></MainLayout>
+            </ProtectedRoute>
+          } />
+
+          {/* Solo Admin — inventario */}
+          <Route path="/admin/inventario" element={
+            <ProtectedRoute allowedRoles={['ADMIN']}>
+              <MainLayout><InventarioPanel /></MainLayout>
             </ProtectedRoute>
           } />
 

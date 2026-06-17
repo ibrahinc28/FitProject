@@ -24,6 +24,10 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
 
+services:
+  ms-inventario:
+    url: ${MS_INVENTARIO_URL:http://localhost:8094/api/v1}
+
 logging:
   level:
     com.fitproject.gestion: INFO

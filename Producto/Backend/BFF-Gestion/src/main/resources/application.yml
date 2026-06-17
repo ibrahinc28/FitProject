@@ -29,6 +29,8 @@ services:
     url: ${MS_GESTION_URL:http://localhost:8080/api/v1}
   ms-users:
     url: ${MS_USERS_URL:http://localhost:8090/api/v1}
+  ms-inventario:
+    url: ${MS_INVENTARIO_URL:http://localhost:8094/api/v1}
 
 # JWT
 jwt:

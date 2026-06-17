@@ -17,6 +17,8 @@ app.get('/health', (_req, res) => res.json({ status: 'ok', service: 'api-gateway
 app.use('/auth', authRouter)
 
 // Protected: proxy to BFFs
+app.use('/api/v1/mobile',     requireAuth, gestionProxy)   // Admin Panel project/evidence management
+app.use('/api/v1/inventory',  requireAuth, gestionProxy)   // Inventory management (MS-Inventario via BFF)
 app.use('/api/v1/projects',   requireAuth, gestionProxy)
 app.use('/api/v1/evidence',   requireAuth, gestionProxy)
 app.use('/api/v1/steps',      requireAuth, gestionProxy)

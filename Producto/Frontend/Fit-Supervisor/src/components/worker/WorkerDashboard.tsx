@@ -3,8 +3,18 @@ import { useAuth } from '../../context/AuthContext'
 import { getEvidenceByWorker, workerSubmitEvidence } from '../../services/evidenceService'
 import { getProjects } from '../../services/projectService'
 import { uploadImage } from '../../services/cloudinaryService'
+import { getInsumos } from '../../services/inventarioService'
 import type { Evidence } from '../../types/evidence'
 import type { Project } from '../../types/project'
+import type { Insumo } from '../../services/inventarioService'
+
+interface InsumoRow {
+  insumoId: string
+  nombre: string
+  cantidad: number
+  unidadMedida: string
+  stockDisponible: number
+}
 
 const isAwaitingWorker = (ev: Evidence) =>
   !!ev.assignedWorkerId && (!ev.evidenceUrl || ev.evidenceUrl === '')
@@ -35,6 +45,7 @@ const WorkerDashboard: React.FC = () => {
 
   const [evidences, setEvidences] = useState<Evidence[]>([])
   const [projects, setProjects] = useState<Project[]>([])
+  const [insumos, setInsumos] = useState<Insumo[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -44,6 +55,7 @@ const WorkerDashboard: React.FC = () => {
   const [uploadFile, setUploadFile] = useState<File | null>(null)
   const [uploadPreview, setUploadPreview] = useState<string | null>(null)
   const [uploadDesc, setUploadDesc] = useState('')
+  const [insumoRows, setInsumoRows] = useState<InsumoRow[]>([])
   const [submitting, setSubmitting] = useState(false)
   const [cardError, setCardError] = useState('')
 
@@ -52,10 +64,12 @@ const WorkerDashboard: React.FC = () => {
     Promise.all([
       getEvidenceByWorker(user.userId),
       getProjects(),
+      getInsumos().catch(() => [] as Insumo[]),
     ])
-      .then(([evs, projs]) => {
+      .then(([evs, projs, ins]) => {
         setEvidences(evs)
         setProjects(projs)
+        setInsumos(ins)
       })
       .catch(() => setError('No se pudieron cargar las tareas. Verifica la conexión.'))
       .finally(() => setLoading(false))
@@ -69,6 +83,7 @@ const WorkerDashboard: React.FC = () => {
     setUploadFile(null)
     setUploadPreview(null)
     setUploadDesc(ev.description || '')
+    setInsumoRows([])
     setCardError('')
   }
 
@@ -78,6 +93,7 @@ const WorkerDashboard: React.FC = () => {
     if (uploadPreview) URL.revokeObjectURL(uploadPreview)
     setUploadPreview(null)
     setUploadDesc('')
+    setInsumoRows([])
     setCardError('')
   }
 
@@ -89,20 +105,71 @@ const WorkerDashboard: React.FC = () => {
     setUploadPreview(URL.createObjectURL(file))
   }
 
+  const addInsumoRow = () => {
+    setInsumoRows(prev => [...prev, { insumoId: '', nombre: '', cantidad: 1, unidadMedida: '', stockDisponible: 0 }])
+  }
+
+  const removeInsumoRow = (idx: number) => {
+    setInsumoRows(prev => prev.filter((_, i) => i !== idx))
+  }
+
+  const updateInsumoRow = (idx: number, insumoId: string) => {
+    const found = insumos.find(i => i.insumoId === insumoId)
+    if (!found) return
+    setInsumoRows(prev => prev.map((row, i) =>
+      i === idx ? {
+        insumoId: found.insumoId,
+        nombre: found.nombre,
+        cantidad: 1,
+        unidadMedida: found.unidadMedida,
+        stockDisponible: found.cantidadDisponible,
+      } : row
+    ))
+  }
+
+  const updateInsumoQty = (idx: number, qty: number) => {
+    setInsumoRows(prev => prev.map((row, i) => i === idx ? { ...row, cantidad: qty } : row))
+  }
+
   const handleSubmit = async (evidenceId: string) => {
     if (!uploadFile) { setCardError('Selecciona una imagen'); return }
+
+    // Validate insumo rows
+    for (const row of insumoRows) {
+      if (!row.insumoId) { setCardError('Selecciona un insumo en cada fila o elimínala'); return }
+      if (row.cantidad <= 0) { setCardError('La cantidad de cada insumo debe ser mayor a 0'); return }
+      if (row.cantidad > row.stockDisponible) {
+        setCardError(`Stock insuficiente para "${row.nombre}". Disponible: ${row.stockDisponible} ${row.unidadMedida}, solicitado: ${row.cantidad}.`)
+        return
+      }
+    }
+
+    // Check duplicates
+    const ids = insumoRows.map(r => r.insumoId)
+    if (new Set(ids).size !== ids.length) {
+      setCardError('No puedes usar el mismo insumo más de una vez'); return
+    }
+
     setSubmitting(true)
     setCardError('')
     try {
       const { url } = await uploadImage(uploadFile)
-      const updated = await workerSubmitEvidence(evidenceId, url, uploadDesc)
+      const updated = await workerSubmitEvidence(
+        evidenceId, url, uploadDesc,
+        insumoRows.length > 0 ? insumoRows.map(r => ({
+          insumoId: r.insumoId,
+          nombre: r.nombre,
+          cantidad: r.cantidad,
+          unidadMedida: r.unidadMedida,
+        })) : undefined
+      )
       setEvidences(prev => prev.map(e => e.evidenceId === evidenceId ? updated : e))
       setSuccess('Evidencia enviada. El supervisor la revisará pronto.')
       cancelUpload()
     } catch (err: unknown) {
       const axiosData = (err as { response?: { data?: { message?: string; error?: string } } })?.response?.data
       const plainMsg = (err as Error)?.message
-      setCardError(axiosData?.message ?? axiosData?.error ?? plainMsg ?? 'Error al enviar la evidencia')
+      setCardError(axiosData?.error ?? axiosData?.message ?? plainMsg ?? 'Error al enviar la evidencia')
     } finally {
       setSubmitting(false)
     }
@@ -218,7 +285,7 @@ const WorkerDashboard: React.FC = () => {
 
                       {/* Inline upload form */}
                       {uploadingId === ev.evidenceId && (
-                        <div className="border-t border-blue-800/40 bg-blue-900/10 p-5 space-y-3">
+                        <div className="border-t border-blue-800/40 bg-blue-900/10 p-5 space-y-4">
                           <p className="text-blue-300 text-sm font-semibold">Subir evidencia fotográfica</p>
 
                           {cardError && (
@@ -272,6 +339,63 @@ const WorkerDashboard: React.FC = () => {
                             className="w-full px-3 py-2 bg-[#111] border border-blue-800/40 text-white rounded-lg text-sm outline-none focus:border-blue-500 resize-none"
                           />
 
+                          {/* Insumos section */}
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <p className="text-gray-300 text-xs font-semibold uppercase tracking-wider">
+                                Materiales utilizados (opcional)
+                              </p>
+                              <button
+                                type="button"
+                                onClick={addInsumoRow}
+                                disabled={insumos.length === 0}
+                                className="text-xs text-orange-400 hover:text-orange-300 disabled:text-gray-600 transition"
+                              >
+                                + Agregar material
+                              </button>
+                            </div>
+
+                            {insumos.length === 0 && (
+                              <p className="text-gray-600 text-xs">No hay insumos disponibles en el inventario.</p>
+                            )}
+
+                            {insumoRows.map((row, idx) => (
+                              <div key={idx} className="flex gap-2 items-center">
+                                <select
+                                  value={row.insumoId}
+                                  onChange={e => updateInsumoRow(idx, e.target.value)}
+                                  className="flex-1 min-w-0 px-2 py-1.5 bg-[#111] border border-gray-700 text-white rounded-lg text-xs outline-none focus:border-orange-500"
+                                >
+                                  <option value="">Seleccionar insumo...</option>
+                                  {insumos.map(ins => (
+                                    <option key={ins.insumoId} value={ins.insumoId}>
+                                      {ins.nombre} (stock: {ins.cantidadDisponible} {ins.unidadMedida})
+                                    </option>
+                                  ))}
+                                </select>
+                                <input
+                                  type="number"
+                                  min={1}
+                                  max={row.stockDisponible || undefined}
+                                  value={row.cantidad}
+                                  onChange={e => updateInsumoQty(idx, Number(e.target.value))}
+                                  disabled={!row.insumoId}
+                                  className="w-20 px-2 py-1.5 bg-[#111] border border-gray-700 text-white rounded-lg text-xs outline-none focus:border-orange-500 disabled:opacity-40"
+                                />
+                                {row.unidadMedida && (
+                                  <span className="text-gray-500 text-xs shrink-0">{row.unidadMedida}</span>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => removeInsumoRow(idx)}
+                                  className="text-gray-600 hover:text-red-400 transition shrink-0"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+
                           <div className="flex gap-2">
                             <button
                               onClick={() => void handleSubmit(ev.evidenceId)}
@@ -322,6 +446,11 @@ const WorkerDashboard: React.FC = () => {
                         <p className="text-gray-600 text-xs mt-0.5">
                           {projectName(ev.projectId)}
                         </p>
+                        {ev.insumosUsados && ev.insumosUsados.length > 0 && (
+                          <p className="text-gray-500 text-xs mt-1">
+                            Materiales: {ev.insumosUsados.map(i => `${i.cantidad} ${i.unidadMedida} ${i.nombre}`).join(', ')}
+                          </p>
+                        )}
                       </div>
                       <span className={`text-xs px-2.5 py-1 rounded-full border shrink-0 ${getStatusBadge(ev)}`}>
                         {getStatusLabel(ev)}

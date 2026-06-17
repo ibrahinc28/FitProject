@@ -44,6 +44,10 @@ public class Evidence {
     @Column(name = "assigned_worker_name")
     private String assignedWorkerName;
 
+    // JSON array of consumed insumos: [{"insumoId":"...","nombre":"...","cantidad":N,"unidadMedida":"..."}]
+    @Column(name = "insumos_usados", columnDefinition = "TEXT")
+    private String insumosUsados;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     @Builder.Default

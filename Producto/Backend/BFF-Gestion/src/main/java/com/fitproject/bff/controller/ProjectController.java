@@ -8,8 +8,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 import java.util.List;
 
@@ -70,5 +73,20 @@ public class ProjectController {
             log.error("Error al obtener proyecto {}", projectId, e);
             return ResponseEntity.notFound().build();
         }
+    }
+
+    @PostMapping("/projects")
+    @Operation(summary = "Crear proyecto (solo ADMIN)")
+    public ResponseEntity<ProjectDTO> createProject(@RequestBody Map<String, Object> body) {
+        String modelName   = (String) body.get("modelName");
+        String description = (String) body.get("description");
+        String imageUrl    = (String) body.get("imageUrl");
+        Double budget      = body.get("budget") != null ? Double.parseDouble(body.get("budget").toString()) : null;
+        String supervisorId   = (String) body.get("supervisorId");
+        String supervisorName = (String) body.get("supervisorName");
+        log.info("POST /api/v1/mobile/projects modelName={} supervisorId={}", modelName, supervisorId);
+        GestionClient.CreateProjectRequest req = new GestionClient.CreateProjectRequest(
+                modelName, description, imageUrl, budget, supervisorId, supervisorName);
+        return ResponseEntity.status(HttpStatus.CREATED).body(gestionClient.createProject(req));
     }
 }

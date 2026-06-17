@@ -35,6 +35,10 @@ public class ProjectDTO {
 
     private Double budget;
 
+    private String supervisorId;
+
+    private String supervisorName;
+
     @NotNull(message = "El progreso general es requerido")
     @Min(value = 0, message = "El progreso no puede ser menor a 0")
     @Max(value = 100, message = "El progreso no puede ser mayor a 100")

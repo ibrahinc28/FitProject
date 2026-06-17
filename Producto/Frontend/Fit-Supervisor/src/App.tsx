@@ -5,7 +5,6 @@ import AuthCallbackPage from './components/auth/AuthCallbackPage'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 import Sidebar from './components/layout/Sidebar'
 import HomePage from './components/home/HomePage'
-import CreateProjectPage from './components/projects/CreateProjectPage'
 import ProjectDetail from './components/projects/ProjectDetail'
 import EvidencePage from './components/evidence/EvidencePage'
 import NotificationsPage from './components/notifications/NotificationsPage'
@@ -13,6 +12,7 @@ import ProfilePage from './components/profile/ProfilePage'
 import { getPendingEvidences } from './services/evidenceService'
 import WorkerProtectedRoute from './components/auth/WorkerProtectedRoute'
 import WorkerDashboard from './components/worker/WorkerDashboard'
+import InventarioPage from './components/inventario/InventarioPage'
 
 const POLL_INTERVAL = 30_000
 
@@ -75,11 +75,6 @@ const App: React.FC = () => (
             <AppShell><HomePage /></AppShell>
           </ProtectedRoute>
         } />
-        <Route path="/projects/new" element={
-          <ProtectedRoute>
-            <AppShell><CreateProjectPage /></AppShell>
-          </ProtectedRoute>
-        } />
         <Route path="/projects/:projectId" element={
           <ProtectedRoute>
             <AppShell><ProjectDetail /></AppShell>
@@ -93,6 +88,11 @@ const App: React.FC = () => (
         <Route path="/notifications" element={
           <ProtectedRoute>
             <AppShell><NotificationsPage /></AppShell>
+          </ProtectedRoute>
+        } />
+        <Route path="/inventario" element={
+          <ProtectedRoute>
+            <AppShell><InventarioPage /></AppShell>
           </ProtectedRoute>
         } />
         <Route path="/profile" element={

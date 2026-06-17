@@ -42,11 +42,13 @@ export const deleteEvidence = async (evidenceId: string, email: string, password
 export const workerSubmitEvidence = async (
   evidenceId: string,
   evidenceUrl: string,
-  description?: string
+  description?: string,
+  insumosUsados?: { insumoId: string; nombre: string; cantidad: number; unidadMedida: string }[]
 ): Promise<Evidence> => {
   const { data } = await api.post<Evidence>(`/evidence/${evidenceId}/worker-submit`, {
     evidenceUrl,
     description,
+    insumosUsados: insumosUsados && insumosUsados.length > 0 ? insumosUsados : undefined,
   })
   return data
 }
